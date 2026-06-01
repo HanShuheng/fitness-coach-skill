@@ -1,12 +1,61 @@
 # 多 CowAgent 实例数据隔离部署说明
 
-如果一台服务器只运行一个 CowAgent，不需要额外配置。本 skill 默认把数据保存到：
+重要：本项目是 CowAgent skill，不是常驻服务。skill 代码可以被多个 CowAgent 或多个用户共用；真正区分数据的是“调用脚本时传入的环境变量或参数”。
+
+如果不传用户标识，默认数据会保存到：
 
 ```text
-$COW_WORKSPACE/fitness_coach/
+$COW_WORKSPACE/fitness_coach/users/default/
 ```
 
-如果一台服务器运行多个 CowAgent，就必须给每个实例设置不同的环境变量，否则它们可能共用同一份 `profile.md`、每日记录、备份和导出数据。
+这意味着：多个用户都不传 `--user-id` 时，会共用 `default` 这套数据。
+
+## 第一层：区分用户或会话
+
+每次调用脚本时，推荐传稳定用户 ID：
+
+```bash
+python scripts/fitness_coach.py --user-id wx-user-001 profile status
+python scripts/fitness_coach.py --user-id wx-user-001 record --payload-json '{"body":{"weight_kg":70}}'
+```
+
+这个用户的数据会保存到：
+
+```text
+$COW_WORKSPACE/fitness_coach/users/wx-user-001/
+```
+
+另一个用户：
+
+```bash
+python scripts/fitness_coach.py --user-id wx-user-002 profile status
+```
+
+会保存到：
+
+```text
+$COW_WORKSPACE/fitness_coach/users/wx-user-002/
+```
+
+如果 CowAgent 能提供会话或接收人 ID，也可以设置环境变量：
+
+```bash
+export FITNESS_COACH_USER_ID=wx-user-001
+```
+
+支持的用户变量优先级：
+
+```text
+--user-id / --profile-id
+FITNESS_COACH_USER_ID
+COW_USER_ID
+COW_SESSION_ID
+COW_NOTIFY_SESSION_ID
+```
+
+## 第二层：区分 CowAgent 实例
+
+如果一台服务器运行多个 CowAgent，还要给每个实例设置不同的环境变量，否则不同 CowAgent 实例可能共用同一个 `users/` 根目录。
 
 ## 你要设置哪个变量
 
@@ -25,7 +74,7 @@ FITNESS_COACH_INSTANCE_ID=wxbot-main
 这个实例的数据会保存到：
 
 ```text
-$COW_WORKSPACE/fitness_coach/instances/wxbot-main/
+$COW_WORKSPACE/fitness_coach/instances/wxbot-main/users/<user-id>/
 ```
 
 另一个实例如果设置：
@@ -37,10 +86,10 @@ FITNESS_COACH_INSTANCE_ID=wxbot-test
 它的数据会保存到：
 
 ```text
-$COW_WORKSPACE/fitness_coach/instances/wxbot-test/
+$COW_WORKSPACE/fitness_coach/instances/wxbot-test/users/<user-id>/
 ```
 
-这样两个 CowAgent 就不会共用同一套健身数据。
+这样两个 CowAgent 实例不会共用同一个用户数据根目录；同一个实例内的不同用户再由 `--user-id` 区分。
 
 ## systemd 启动方式
 
@@ -138,26 +187,26 @@ python scripts/fitness_coach.py info
 
 看输出中的 `runtime_dir`。
 
-主实例应该类似：
+主实例某个用户应该类似：
 
 ```text
-/root/cow/fitness_coach/instances/wxbot-main
+/root/cow/fitness_coach/instances/wxbot-main/users/wx-user-001
 ```
 
-测试实例应该类似：
+测试实例某个用户应该类似：
 
 ```text
-/root/cow/fitness_coach/instances/wxbot-test
+/root/cow/fitness_coach/instances/wxbot-test/users/wx-user-001
 ```
 
-如果两个实例输出同一个 `runtime_dir`，说明还没有隔离成功。
+如果两个不同用户或不同实例输出同一个 `runtime_dir`，说明还没有隔离成功。
 
 ## 已有数据怎么办
 
 如果之前已经在默认目录产生了数据：
 
 ```text
-$COW_WORKSPACE/fitness_coach/
+$COW_WORKSPACE/fitness_coach/users/default/
 ```
 
 建议先导出：
@@ -179,7 +228,8 @@ python scripts/fitness_coach.py import --from <export.zip>
 ```text
 FITNESS_COACH_DATA_DIR
 > FITNESS_COACH_INSTANCE_ID / COWAGENT_INSTANCE_ID / COW_AGENT_INSTANCE_ID
-> $COW_WORKSPACE/fitness_coach
+> --user-id / FITNESS_COACH_USER_ID / COW_USER_ID / COW_SESSION_ID / COW_NOTIFY_SESSION_ID
+> $COW_WORKSPACE/fitness_coach/users/default
 ```
 
 普通多实例部署，用 `FITNESS_COACH_INSTANCE_ID` 就够了；需要指定数据盘时，再用 `FITNESS_COACH_DATA_DIR`。

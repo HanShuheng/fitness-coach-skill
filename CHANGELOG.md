@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.1.3 - 2026-06-01
+
+- 增加用户/会话级数据隔离，支持 `--user-id` / `--profile-id` 和 `FITNESS_COACH_USER_ID`。
+- 默认数据从实例目录进一步隔离到 `users/<user-id>`；未提供用户 ID 时使用 `users/default`。
+- 补充“skill 不是服务，必须由 CowAgent 调用时传稳定用户标识”的说明。
+
 ## 0.1.2 - 2026-06-01
 
 - 新增 `references/multi-instance-deployment.md`，说明多 CowAgent 实例如何设置环境变量。

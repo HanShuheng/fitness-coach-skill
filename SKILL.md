@@ -1,11 +1,11 @@
 ---
 name: fitness-coach-skill
 description: 用于健身教练场景的 CowAgent 编排 skill，覆盖训练评估、增肌训练、SBS 模板、饮食宏量、餐食个性化、长期记录和完整训练饮食计划，并按需要路由到子 skill。
-version: "0.1.2"
+version: "0.1.3"
 entrypoint: "scripts/fitness_coach.py"
 post_install_command: "python scripts/fitness_coach.py profile init"
-config_file: "$FITNESS_COACH_DATA_DIR/config.json 或 $COW_WORKSPACE/fitness_coach[/instances/<id>]/config.json"
-runtime_data_dir: "$FITNESS_COACH_DATA_DIR 或 $COW_WORKSPACE/fitness_coach[/instances/<id>]"
+config_file: "$FITNESS_COACH_DATA_DIR/config.json 或 $COW_WORKSPACE/fitness_coach[/instances/<id>]/users/<user-id>/config.json"
+runtime_data_dir: "$FITNESS_COACH_DATA_DIR 或 $COW_WORKSPACE/fitness_coach[/instances/<id>]/users/<user-id>"
 scheduler_file: "$COW_WORKSPACE/scheduler/tasks.json"
 timezone: "Asia/Shanghai"
 data_schema_version: 1
@@ -26,8 +26,9 @@ version_check_url: "https://raw.githubusercontent.com/HanShuheng/fitness-coach-s
 
 - 入口命令：`python scripts/fitness_coach.py <command>`。
 - 首次安装后运行 `profile init` 建立用户基础档案；后续用 `profile update` 合并用户补充信息。
-- 长期数据默认保存在 `$COW_WORKSPACE/fitness_coach`：`profile.md` 存基础档案，`data/daily/` 存每日记录，`data/summaries/` 存周/月摘要，`config.json` 存提醒时间、必填字段和版本检查地址。
-- 多 CowAgent 共用同一服务器时，必须给每个实例设置 `FITNESS_COACH_INSTANCE_ID`，数据会隔离到 `$COW_WORKSPACE/fitness_coach/instances/<id>`；也可以用 `FITNESS_COACH_DATA_DIR` 直接指定完整数据目录。具体操作见 `references/multi-instance-deployment.md`。
+- 长期数据默认保存在 `$COW_WORKSPACE/fitness_coach/users/<user-id>`：`profile.md` 存基础档案，`data/daily/` 存每日记录，`data/summaries/` 存周/月摘要，`config.json` 存提醒时间、必填字段和版本检查地址。
+- 调用脚本时必须尽量传 `--user-id <稳定用户或会话ID>`，否则会落到 `users/default`，多个用户会共用默认档案。
+- 多 CowAgent 共用同一服务器时，再给每个实例设置 `FITNESS_COACH_INSTANCE_ID`，数据会隔离到 `$COW_WORKSPACE/fitness_coach/instances/<id>/users/<user-id>`；也可以用 `FITNESS_COACH_DATA_DIR` 直接指定完整数据目录。具体操作见 `references/multi-instance-deployment.md`。
 - 自动追问使用 `setup-schedule --yes` 写入 crontab；每日检查会根据缺失字段向 `$COW_WORKSPACE/scheduler/tasks.json` 写入 CowAgent 消息任务。
 - 具体命令、数据结构和实现细节以 `scripts/fitness_coach_lib/` 为准；面向用户的长期说明和迁移说明应放入 `references/`。
 

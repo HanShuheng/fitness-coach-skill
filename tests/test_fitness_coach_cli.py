@@ -12,6 +12,10 @@ ROOT = Path(__file__).resolve().parents[1]
 CLI = ROOT / "scripts" / "fitness_coach.py"
 
 
+def runtime_dir(base: Path) -> Path:
+    return base / "cow" / "fitness_coach" / "users" / "default"
+
+
 def run_cli(tmp_path: Path, *args: str, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["HOME"] = str(tmp_path)
@@ -45,7 +49,7 @@ def test_profile_init_update_and_status(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert "initialized: true" in result.stdout
 
-    profile_path = tmp_path / "cow" / "fitness_coach" / "profile.md"
+    profile_path = runtime_dir(tmp_path) / "profile.md"
     text = profile_path.read_text(encoding="utf-8")
     assert "custom" in text
     assert "减脂" in text
@@ -75,7 +79,7 @@ def test_record_daily_check_and_rebuild_index(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert "已完整" in result.stdout
 
-    index = tmp_path / "cow" / "fitness_coach" / "data" / "index.json"
+    index = runtime_dir(tmp_path) / "data" / "index.json"
     assert run_cli(tmp_path, "rebuild-index").returncode == 0
     assert index.exists()
 
@@ -96,13 +100,13 @@ def test_export_import_manifest(tmp_path: Path) -> None:
     other = tmp_path / "other"
     result = run_cli(other, "import", "--from", str(zip_path))
     assert result.returncode == 0
-    assert (other / "cow" / "fitness_coach" / "profile.md").exists()
+    assert (runtime_dir(other) / "profile.md").exists()
 
 
 def test_migrate_uninstall_and_version_skip(tmp_path: Path) -> None:
     assert run_cli(tmp_path, "migrate", "--dry-run").returncode == 0
     assert run_cli(tmp_path, "uninstall", "--dry-run").returncode == 0
     assert run_cli(tmp_path, "skip-version", "--version", "9.9.9").returncode == 0
-    config = json.loads((tmp_path / "cow" / "fitness_coach" / "config.json").read_text(encoding="utf-8"))
+    config = json.loads((runtime_dir(tmp_path) / "config.json").read_text(encoding="utf-8"))
     assert "9.9.9" in config["skipped_versions"]
     assert run_cli(tmp_path, "clear-skipped-version", "--version", "9.9.9").returncode == 0

@@ -64,15 +64,35 @@ python scripts/fitness_coach.py info
 
 ## 数据保存位置
 
-真实用户数据默认保存在：
+这个项目是 skill，不是常驻服务。它能区分“是谁”，靠的是 CowAgent 或调用命令传入一个稳定的用户/会话标识。
 
-```text
-~/cow/fitness_coach/
+推荐每次调用脚本都带上：
+
+```bash
+python scripts/fitness_coach.py --user-id "<用户或会话ID>" info
 ```
 
-如果同一台服务器只运行一个 CowAgent，这个默认路径即可。
+例如微信用户 `wx-user-001`：
 
-如果同一台服务器运行多个 CowAgent，请为每个实例设置独立环境变量，避免多个机器人读写同一份用户数据：
+```bash
+python scripts/fitness_coach.py --user-id wx-user-001 profile status
+```
+
+这个用户的数据会保存在：
+
+```text
+$COW_WORKSPACE/fitness_coach/users/wx-user-001/
+```
+
+如果不传 `--user-id`，会落到：
+
+```text
+$COW_WORKSPACE/fitness_coach/users/default/
+```
+
+这适合单用户测试，不适合多个真实用户长期使用。
+
+如果同一台服务器运行多个 CowAgent，再为每个 CowAgent 实例设置独立环境变量：
 
 ```bash
 export FITNESS_COACH_INSTANCE_ID="wxbot-main"
@@ -81,7 +101,7 @@ export FITNESS_COACH_INSTANCE_ID="wxbot-main"
 设置后，真实数据会保存到：
 
 ```text
-$COW_WORKSPACE/fitness_coach/instances/wxbot-main/
+$COW_WORKSPACE/fitness_coach/instances/wxbot-main/users/<user-id>/
 ```
 
 也可以直接指定完整数据目录，优先级最高：
@@ -94,7 +114,8 @@ export FITNESS_COACH_DATA_DIR="/data/cowagent/wxbot-main/fitness_coach"
 
 1. `FITNESS_COACH_DATA_DIR`
 2. `FITNESS_COACH_INSTANCE_ID` / `COWAGENT_INSTANCE_ID` / `COW_AGENT_INSTANCE_ID`
-3. `$COW_WORKSPACE/fitness_coach`
+3. `--user-id` / `FITNESS_COACH_USER_ID` / `COW_USER_ID` / `COW_SESSION_ID`
+4. `$COW_WORKSPACE/fitness_coach/users/default`
 
 如果你不知道“在哪里设置环境变量”，看这里：
 

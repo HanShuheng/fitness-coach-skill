@@ -50,7 +50,7 @@ def run_cli_with_env(
 
 
 def runtime_dir(workspace: Path) -> Path:
-    return workspace / "fitness_coach"
+    return workspace / "fitness_coach" / "users" / "default"
 
 
 def today() -> str:
@@ -287,7 +287,7 @@ def test_skip_version_and_check_update_use_persisted_state(tmp_path: Path) -> No
     payload = extract_json_object(check_result.stdout)
 
     assert skip_result.returncode == 0
-    assert payload["current_version"] == "0.1.2"
+    assert payload["current_version"] == "0.1.3"
     assert payload["remote_version"] == "0.2.0"
     assert payload["has_update"] is True
     assert payload["skipped"] is True
@@ -334,8 +334,8 @@ def test_runtime_dir_can_be_isolated_by_instance_id(tmp_path: Path) -> None:
     )
 
     assert result.returncode == 0
-    assert (workspace / "fitness_coach" / "instances" / "wxbot-main" / "profile.md").exists()
-    assert not (workspace / "fitness_coach" / "profile.md").exists()
+    assert (workspace / "fitness_coach" / "instances" / "wxbot-main" / "users" / "default" / "profile.md").exists()
+    assert not (workspace / "fitness_coach" / "users" / "default" / "profile.md").exists()
 
 
 def test_explicit_data_dir_has_highest_priority(tmp_path: Path) -> None:
@@ -354,3 +354,15 @@ def test_explicit_data_dir_has_highest_priority(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert (data_dir / "profile.md").exists()
     assert not (workspace / "fitness_coach" / "instances" / "ignored" / "profile.md").exists()
+
+
+def test_runtime_dir_can_be_isolated_by_user_id(tmp_path: Path) -> None:
+    workspace = tmp_path / "cow"
+    result_a = run_cli_with_env(workspace, {}, "--user-id", "wx/user/a", "profile", "init")
+    result_b = run_cli_with_env(workspace, {}, "--user-id", "wx-user-b", "profile", "init")
+
+    assert result_a.returncode == 0
+    assert result_b.returncode == 0
+    assert (workspace / "fitness_coach" / "users" / "wx-user-a" / "profile.md").exists()
+    assert (workspace / "fitness_coach" / "users" / "wx-user-b" / "profile.md").exists()
+    assert not (workspace / "fitness_coach" / "users" / "default" / "profile.md").exists()
