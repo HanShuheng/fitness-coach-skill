@@ -3,12 +3,13 @@ from __future__ import annotations
 import shlex
 import subprocess
 import sys
+import os
 from datetime import datetime
 from typing import Any
 
 from .daily import missing_daily_fields
 from .settings import (
-    CONFIG_FILE, PROJECT_ROOT, RUNTIME_DIR, TASKS_FILE, TIME_PATTERN, TIMEZONE,
+    PROJECT_ROOT, RUNTIME_DIR, TASKS_FILE, TIME_PATTERN, TIMEZONE, WORKSPACE,
     WEIXIN_CREDS_FILE, now_local,
 )
 from .storage import atomic_write_json, load_config, read_json
@@ -118,8 +119,23 @@ def build_cron_line(run_time: str, python_bin: str | None = None) -> str:
     script_path = PROJECT_ROOT / "scripts" / "fitness_coach.py"
     log_path = RUNTIME_DIR / "fitness_coach.log"
     python_path = python_bin or sys.executable or "python3"
+    env_parts = [f"COW_WORKSPACE={shlex.quote(str(WORKSPACE))}"]
+    for key in (
+        "FITNESS_COACH_DATA_DIR",
+        "FITNESS_COACH_INSTANCE_ID",
+        "COWAGENT_INSTANCE_ID",
+        "COW_AGENT_INSTANCE_ID",
+        "FITNESS_COACH_USER_ID",
+        "COW_USER_ID",
+        "COW_SESSION_ID",
+        "COW_NOTIFY_SESSION_ID",
+    ):
+        value = os.environ.get(key)
+        if value:
+            env_parts.append(f"{key}={shlex.quote(value)}")
+    env_prefix = " ".join(env_parts)
     return (
-        f"{minute} {hour} * * * {shlex.quote(str(python_path))} "
+        f"{minute} {hour} * * * {env_prefix} {shlex.quote(str(python_path))} "
         f"{shlex.quote(str(script_path))} daily-check >> {shlex.quote(str(log_path))} 2>&1"
     )
 

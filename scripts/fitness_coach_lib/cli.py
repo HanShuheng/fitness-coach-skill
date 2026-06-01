@@ -9,7 +9,6 @@ from .info import info
 from .migration import migrate
 from .profile import init_profile, profile_status, show_profile, update_profile
 from .scheduler import daily_check, setup_schedule
-from .settings import ensure_dirs
 from .uninstall import uninstall
 from .versioning import check_update, post_update_check, prepare_update, skip_version, version
 
@@ -78,8 +77,6 @@ def main() -> int:
     sub.add_parser("post-update-check")
 
     args = parser.parse_args()
-    ensure_dirs()
-
     if args.command == "profile":
         if args.profile_command == "status":
             import json

@@ -1,5 +1,12 @@
 # 更新日志
 
+## 0.1.5 - 2026-06-01
+
+- 根据 CowAgent 多实例 workspace 文档校正隔离说明：多实例首要使用独立 `COW_WORKSPACE`。
+- `setup-schedule` 生成的 crontab 显式写入 `COW_WORKSPACE`，并保留当前用户/实例相关环境变量。
+- `post_install_command` 改为 `version`，避免安装后自动创建 `users/default` 数据。
+- 常用命令示例补充 `--user-id`，避免误写默认用户目录。
+
 ## 0.1.4 - 2026-06-01
 
 - 首次使用流程增加“先确认数据隔离身份”的说明。

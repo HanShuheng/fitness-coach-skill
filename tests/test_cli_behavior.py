@@ -287,7 +287,7 @@ def test_skip_version_and_check_update_use_persisted_state(tmp_path: Path) -> No
     payload = extract_json_object(check_result.stdout)
 
     assert skip_result.returncode == 0
-    assert payload["current_version"] == "0.1.4"
+    assert payload["current_version"] == "0.1.5"
     assert payload["remote_version"] == "0.2.0"
     assert payload["has_update"] is True
     assert payload["skipped"] is True
@@ -386,3 +386,30 @@ def test_info_reports_explicit_user_isolation(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert payload["isolation"]["user_id"] == "wx-user-a"
     assert payload["isolation"]["using_default_user"] is False
+
+
+def test_version_command_does_not_create_default_runtime_dir(tmp_path: Path) -> None:
+    workspace = tmp_path / "cow"
+    result = run_cli(workspace, "version")
+
+    assert result.returncode == 0
+    assert "0.1.5" in result.stdout
+    assert not (workspace / "fitness_coach").exists()
+
+
+def test_setup_schedule_cron_line_keeps_workspace_and_user_id(tmp_path: Path) -> None:
+    workspace = tmp_path / "cow"
+    result = run_cli_with_env(
+        workspace,
+        {},
+        "--user-id",
+        "wx/user/a",
+        "setup-schedule",
+        "--daily-time",
+        "22:00",
+    )
+
+    assert result.returncode == 0
+    assert f"COW_WORKSPACE={workspace}" in result.stdout
+    assert "FITNESS_COACH_USER_ID=wx/user/a" in result.stdout
+    assert "fitness_coach/users/wx-user-a/fitness_coach.log" in result.stdout

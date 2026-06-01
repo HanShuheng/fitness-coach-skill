@@ -28,8 +28,8 @@ cow skill install HanShuheng/fitness-coach-skill
 ### 2. 初始化用户基础档案
 
 ```bash
-python scripts/fitness_coach.py profile init
-python scripts/fitness_coach.py profile status
+python scripts/fitness_coach.py --user-id wx-user-001 profile init
+python scripts/fitness_coach.py --user-id wx-user-001 profile status
 ```
 
 首次真正服务用户时，skill 会先询问基础信息：目标、年龄或出生年份、性别、身高体重、训练经验、每周可训练时间、饮食限制、过敏和伤病限制。
@@ -37,7 +37,7 @@ python scripts/fitness_coach.py profile status
 ### 3. 记录当天数据
 
 ```bash
-python scripts/fitness_coach.py record \
+python scripts/fitness_coach.py --user-id wx-user-001 record \
   --payload-json '{"body":{"weight_kg":70.2},"nutrition":{"summary":"饮食正常"},"training":{"status":"trained"},"recovery":{"sleep_hours":7,"mood":"稳定"}}' \
   --raw-text "今天体重70.2，练胸，睡了7小时。"
 ```
@@ -47,19 +47,19 @@ python scripts/fitness_coach.py record \
 默认检查时间是晚上 `22:00`：
 
 ```bash
-python scripts/fitness_coach.py setup-schedule --yes
+python scripts/fitness_coach.py --user-id wx-user-001 setup-schedule --yes
 ```
 
 如果只想预览 crontab：
 
 ```bash
-python scripts/fitness_coach.py setup-schedule
+python scripts/fitness_coach.py --user-id wx-user-001 setup-schedule
 ```
 
 ### 5. 查看状态
 
 ```bash
-python scripts/fitness_coach.py info
+python scripts/fitness_coach.py --user-id wx-user-001 info
 ```
 
 ## 数据保存位置
@@ -94,7 +94,9 @@ $COW_WORKSPACE/fitness_coach/users/default/
 
 `info` 和 `profile status` 会输出 `isolation.using_default_user`。如果它是 `true`，说明当前没有传用户 ID，多个用户可能共用 `default` 数据。
 
-如果同一台服务器运行多个 CowAgent，再为每个 CowAgent 实例设置独立环境变量：
+如果同一台服务器运行多个 CowAgent，首要原则是每个 CowAgent 实例使用独立 `COW_WORKSPACE`，例如 `/root/cow-a` 和 `/root/cow-b`。这会让 skill 安装目录、scheduler、运行数据天然隔离。完整说明见 `references/cowagent-multi-instance-workspace.md`。
+
+只有在确实需要同一个 `COW_WORKSPACE` 下再区分逻辑实例时，才额外设置：
 
 ```bash
 export FITNESS_COACH_INSTANCE_ID="wxbot-main"

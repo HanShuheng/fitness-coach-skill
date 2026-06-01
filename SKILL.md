@@ -1,9 +1,9 @@
 ---
 name: fitness-coach-skill
 description: 用于健身教练场景的 CowAgent 编排 skill，覆盖训练评估、增肌训练、SBS 模板、饮食宏量、餐食个性化、长期记录和完整训练饮食计划，并按需要路由到子 skill。
-version: "0.1.4"
+version: "0.1.5"
 entrypoint: "scripts/fitness_coach.py"
-post_install_command: "python scripts/fitness_coach.py profile init"
+post_install_command: "python scripts/fitness_coach.py version"
 config_file: "$FITNESS_COACH_DATA_DIR/config.json 或 $COW_WORKSPACE/fitness_coach[/instances/<id>]/users/<user-id>/config.json"
 runtime_data_dir: "$FITNESS_COACH_DATA_DIR 或 $COW_WORKSPACE/fitness_coach[/instances/<id>]/users/<user-id>"
 scheduler_file: "$COW_WORKSPACE/scheduler/tasks.json"
@@ -28,7 +28,7 @@ version_check_url: "https://raw.githubusercontent.com/HanShuheng/fitness-coach-s
 - 首次服务用户时，先确认数据隔离身份：能否拿到稳定的用户/会话 ID；如果拿不到，必须提醒用户会落到 `users/default` 并可能多人共用。之后再运行 `profile init` 建立用户基础档案。
 - 长期数据默认保存在 `$COW_WORKSPACE/fitness_coach/users/<user-id>`：`profile.md` 存基础档案，`data/daily/` 存每日记录，`data/summaries/` 存周/月摘要，`config.json` 存提醒时间、必填字段和版本检查地址。
 - 调用脚本时必须尽量传 `--user-id <稳定用户或会话ID>`，否则会落到 `users/default`，多个用户会共用默认档案。
-- 多 CowAgent 共用同一服务器时，再给每个实例设置 `FITNESS_COACH_INSTANCE_ID`，数据会隔离到 `$COW_WORKSPACE/fitness_coach/instances/<id>/users/<user-id>`；也可以用 `FITNESS_COACH_DATA_DIR` 直接指定完整数据目录。具体操作见 `references/multi-instance-deployment.md`。
+- 多 CowAgent 部署时，首要原则是每个 CowAgent 实例使用独立 `COW_WORKSPACE`；同一个实例内再用 `--user-id` 区分不同用户。具体操作见 `references/cowagent-multi-instance-workspace.md` 和 `references/multi-instance-deployment.md`。
 - 自动追问使用 `setup-schedule --yes` 写入 crontab；每日检查会根据缺失字段向 `$COW_WORKSPACE/scheduler/tasks.json` 写入 CowAgent 消息任务。
 - 具体命令、数据结构和实现细节以 `scripts/fitness_coach_lib/` 为准；面向用户的长期说明和迁移说明应放入 `references/`。
 
@@ -38,11 +38,11 @@ version_check_url: "https://raw.githubusercontent.com/HanShuheng/fitness-coach-s
 |---|---|
 | 首次建档 | `python scripts/fitness_coach.py --user-id '<用户ID>' profile init` |
 | 查看档案状态 | `python scripts/fitness_coach.py --user-id '<用户ID>' profile status` |
-| 更新档案 | `python scripts/fitness_coach.py profile update --payload-json '<json>' --raw-text '<用户原文>'` |
-| 记录当天数据 | `python scripts/fitness_coach.py record --payload-json '<json>' --raw-text '<用户原文>'` |
-| 读取教练上下文 | `python scripts/fitness_coach.py build-context --topic general` |
+| 更新档案 | `python scripts/fitness_coach.py --user-id '<用户ID>' profile update --payload-json '<json>' --raw-text '<用户原文>'` |
+| 记录当天数据 | `python scripts/fitness_coach.py --user-id '<用户ID>' record --payload-json '<json>' --raw-text '<用户原文>'` |
+| 读取教练上下文 | `python scripts/fitness_coach.py --user-id '<用户ID>' build-context --topic general` |
 | 生成摘要 | `python scripts/fitness_coach.py summarize --weekly` 或 `--monthly` |
-| 设置每日检查 | `python scripts/fitness_coach.py setup-schedule --yes` |
+| 设置每日检查 | `python scripts/fitness_coach.py --user-id '<用户ID>' setup-schedule --yes` |
 | 导出迁移包 | `python scripts/fitness_coach.py export` |
 | 导入迁移包 | `python scripts/fitness_coach.py import --from <zip>` |
 | 卸载预览 | `python scripts/fitness_coach.py uninstall --dry-run` |

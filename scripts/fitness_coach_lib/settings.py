@@ -7,7 +7,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 
-SKILL_VERSION = "0.1.4"
+SKILL_VERSION = "0.1.5"
 DATA_SCHEMA_VERSION = 1
 TIMEZONE = ZoneInfo("Asia/Shanghai")
 TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
