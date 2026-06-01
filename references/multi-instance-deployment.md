@@ -1,235 +1,116 @@
-# 多 CowAgent 实例数据隔离部署说明
+# 多 CowAgent 实例部署说明
 
-重要：本项目是 CowAgent skill，不是常驻服务。skill 代码可以被多个 CowAgent 或多个用户共用；真正区分数据的是“调用脚本时传入的环境变量或参数”。
+本 skill 的数据隔离只依赖 CowAgent 实例的 `COW_WORKSPACE`。它不维护 `FITNESS_COACH_USER_ID`、`--user-id`、`FITNESS_COACH_INSTANCE_ID` 或 `users/default`。
 
-如果不传用户标识，默认数据会保存到：
+## 一句话结论
 
-```text
-$COW_WORKSPACE/fitness_coach/users/default/
-```
-
-这意味着：多个用户都不传 `--user-id` 时，会共用 `default` 这套数据。
-
-## 第一层：区分用户或会话
-
-每次调用脚本时，推荐传稳定用户 ID：
-
-```bash
-python scripts/fitness_coach.py --user-id wx-user-001 profile status
-python scripts/fitness_coach.py --user-id wx-user-001 record --payload-json '{"body":{"weight_kg":70}}'
-```
-
-这个用户的数据会保存到：
+一台服务器跑多个 CowAgent 时，每个 CowAgent 实例都必须有自己的 `COW_WORKSPACE`。
 
 ```text
-$COW_WORKSPACE/fitness_coach/users/wx-user-001/
+CowAgent A: COW_WORKSPACE=/root/cow-a
+CowAgent B: COW_WORKSPACE=/root/cow-b
 ```
 
-另一个用户：
-
-```bash
-python scripts/fitness_coach.py --user-id wx-user-002 profile status
-```
-
-会保存到：
+对应的 skill 数据目录：
 
 ```text
-$COW_WORKSPACE/fitness_coach/users/wx-user-002/
+/root/cow-a/fitness_coach/
+/root/cow-b/fitness_coach/
 ```
 
-如果 CowAgent 能提供会话或接收人 ID，也可以设置环境变量：
+这样档案、每日记录、提醒任务、导出包、备份和迁移文件都会隔离。
 
-```bash
-export FITNESS_COACH_USER_ID=wx-user-001
-```
+## 安装位置
 
-支持的用户变量优先级：
+每个 CowAgent 实例应把 skill 安装到自己的 workspace：
 
 ```text
---user-id / --profile-id
-FITNESS_COACH_USER_ID
-COW_USER_ID
-COW_SESSION_ID
-COW_NOTIFY_SESSION_ID
+/root/cow-a/skills/fitness-coach-skill/
+/root/cow-b/skills/fitness-coach-skill/
 ```
 
-## 第二层：区分 CowAgent 实例
+不要让多个 CowAgent 实例共用同一个 workspace。否则它们会共用同一套 skill 数据和 scheduler 任务。
 
-如果一台服务器运行多个 CowAgent，还要给每个实例设置不同的环境变量，否则不同 CowAgent 实例可能共用同一个 `users/` 根目录。
+## systemd 示例
 
-## 你要设置哪个变量
-
-推荐设置：
-
-```bash
-FITNESS_COACH_INSTANCE_ID
-```
-
-例如：
-
-```bash
-FITNESS_COACH_INSTANCE_ID=wxbot-main
-```
-
-这个实例的数据会保存到：
-
-```text
-$COW_WORKSPACE/fitness_coach/instances/wxbot-main/users/<user-id>/
-```
-
-另一个实例如果设置：
-
-```bash
-FITNESS_COACH_INSTANCE_ID=wxbot-test
-```
-
-它的数据会保存到：
-
-```text
-$COW_WORKSPACE/fitness_coach/instances/wxbot-test/users/<user-id>/
-```
-
-这样两个 CowAgent 实例不会共用同一个用户数据根目录；同一个实例内的不同用户再由 `--user-id` 区分。
-
-## systemd 启动方式
-
-多数服务器上的 CowAgent 是 systemd 服务。先看服务名：
-
-```bash
-systemctl list-units --type=service | grep -i cow
-```
-
-假设主实例服务名是 `cowagent.service`，运行：
-
-```bash
-sudo systemctl edit cowagent.service
-```
-
-填入：
+CowAgent A：
 
 ```ini
 [Service]
-Environment=FITNESS_COACH_INSTANCE_ID=wxbot-main
+Environment=COW_WORKSPACE=/root/cow-a
+WorkingDirectory=/root/CowAgent-A
 ```
 
-保存后重载并重启：
+CowAgent B：
+
+```ini
+[Service]
+Environment=COW_WORKSPACE=/root/cow-b
+WorkingDirectory=/root/CowAgent-B
+```
+
+修改后重载并重启对应服务：
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart cowagent.service
+sudo systemctl restart cowagent-a.service
+sudo systemctl restart cowagent-b.service
 ```
 
-如果还有测试实例，例如服务名是 `cowagent-test.service`：
+## 手动运行示例
 
 ```bash
-sudo systemctl edit cowagent-test.service
+COW_WORKSPACE=/root/cow-a cow start
+COW_WORKSPACE=/root/cow-b cow start
 ```
 
-填入：
+## 验证
 
-```ini
-[Service]
-Environment=FITNESS_COACH_INSTANCE_ID=wxbot-test
-```
-
-然后：
+在各自 skill 目录下运行：
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl restart cowagent-test.service
+COW_WORKSPACE=/root/cow-a python scripts/fitness_coach.py info
+COW_WORKSPACE=/root/cow-b python scripts/fitness_coach.py info
 ```
 
-## 手动启动方式
+重点看：
 
-如果你是手动启动 CowAgent：
+- `runtime_context.workspace`
+- `runtime_context.runtime_dir`
+- `scheduler_file`
+
+## 每日提醒
+
+运行：
 
 ```bash
-FITNESS_COACH_INSTANCE_ID=wxbot-main cow start
+COW_WORKSPACE=/root/cow-a python scripts/fitness_coach.py setup-schedule
 ```
 
-或者先 export：
+预览的 cron 行应包含：
+
+```text
+COW_WORKSPACE=/root/cow-a
+```
+
+写入 cron：
 
 ```bash
-export FITNESS_COACH_INSTANCE_ID=wxbot-main
-cow start
+COW_WORKSPACE=/root/cow-a python scripts/fitness_coach.py setup-schedule --yes
 ```
 
-另一个实例换成另一个 ID：
+## 可选：完整数据目录覆盖
+
+通常不需要设置 `FITNESS_COACH_DATA_DIR`。只有你明确要把健身数据放到 workspace 之外时才使用：
 
 ```bash
-FITNESS_COACH_INSTANCE_ID=wxbot-test cow start
-```
-
-## 完全指定数据目录
-
-如果你希望把数据放到明确的数据盘或备份目录，使用：
-
-```bash
-FITNESS_COACH_DATA_DIR=/data/cowagent/wxbot-main/fitness_coach
-```
-
-systemd 写法：
-
-```ini
-[Service]
-Environment=FITNESS_COACH_DATA_DIR=/data/cowagent/wxbot-main/fitness_coach
-```
-
-`FITNESS_COACH_DATA_DIR` 优先级最高。设置了它以后，`FITNESS_COACH_INSTANCE_ID` 会被忽略。
-
-## 验证是否生效
-
-进入 skill 目录后运行：
-
-```bash
+COW_WORKSPACE=/root/cow-a \
+FITNESS_COACH_DATA_DIR=/data/cow-a/fitness_coach \
 python scripts/fitness_coach.py info
 ```
 
-看输出中的 `runtime_dir`。
+设置后，数据会写入 `FITNESS_COACH_DATA_DIR`，但 scheduler 任务仍属于 `COW_WORKSPACE`。
 
-主实例某个用户应该类似：
+## 不覆盖的场景
 
-```text
-/root/cow/fitness_coach/instances/wxbot-main/users/wx-user-001
-```
-
-测试实例某个用户应该类似：
-
-```text
-/root/cow/fitness_coach/instances/wxbot-test/users/wx-user-001
-```
-
-如果两个不同用户或不同实例输出同一个 `runtime_dir`，说明还没有隔离成功。
-
-## 已有数据怎么办
-
-如果之前已经在默认目录产生了数据：
-
-```text
-$COW_WORKSPACE/fitness_coach/users/default/
-```
-
-建议先导出：
-
-```bash
-python scripts/fitness_coach.py export --format zip
-```
-
-再给目标实例设置环境变量，重启 CowAgent，然后导入：
-
-```bash
-python scripts/fitness_coach.py import --from <export.zip>
-```
-
-确认新实例的 `runtime_dir` 正确后，再决定是否清理旧目录。
-
-## 变量优先级
-
-```text
-FITNESS_COACH_DATA_DIR
-> FITNESS_COACH_INSTANCE_ID / COWAGENT_INSTANCE_ID / COW_AGENT_INSTANCE_ID
-> --user-id / FITNESS_COACH_USER_ID / COW_USER_ID / COW_SESSION_ID / COW_NOTIFY_SESSION_ID
-> $COW_WORKSPACE/fitness_coach/users/default
-```
-
-普通多实例部署，用 `FITNESS_COACH_INSTANCE_ID` 就够了；需要指定数据盘时，再用 `FITNESS_COACH_DATA_DIR`。
+如果一个 CowAgent 实例内部服务多个真实用户，本 skill 暂不做用户级隔离。此时不要试图通过 `FITNESS_COACH_USER_ID` 区分，因为该变量已不再被读取。需要由 CowAgent 上层路由、独立 workspace 或未来新增的明确多用户方案解决。

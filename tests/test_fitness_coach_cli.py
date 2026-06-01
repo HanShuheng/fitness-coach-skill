@@ -13,7 +13,7 @@ CLI = ROOT / "scripts" / "fitness_coach.py"
 
 
 def runtime_dir(base: Path) -> Path:
-    return base / "cow" / "fitness_coach" / "users" / "default"
+    return base / "cow" / "fitness_coach"
 
 
 def run_cli(tmp_path: Path, *args: str, input_text: str | None = None) -> subprocess.CompletedProcess[str]:

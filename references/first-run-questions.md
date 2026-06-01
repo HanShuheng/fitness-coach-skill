@@ -1,47 +1,61 @@
-# 首次建档问题模板
+# 首次使用问题清单
 
-首次调用本 skill 时，先确认数据隔离身份，再检查 `profile status`。若未初始化，先建档，不直接给完整计划。
+首次调用本 skill 时，不要直接生成训练或饮食计划。先确认当前 CowAgent workspace，再建立基础档案。
 
-## 第零步：确认数据隔离身份
+## 第零步：确认 workspace
 
-本项目是 skill，不是服务，不能自动知道当前是谁。调用方应尽量传稳定用户或会话 ID：
+先运行：
 
 ```bash
-python scripts/fitness_coach.py --user-id "<用户或会话ID>" profile status
+python scripts/fitness_coach.py info
 ```
 
-如果 `profile status` 或 `info` 输出中 `isolation.using_default_user` 为 `true`，说明当前数据会落到：
+确认输出中的：
 
-```text
-$COW_WORKSPACE/fitness_coach/users/default/
-```
+- `runtime_context.workspace` 指向当前 CowAgent 实例的 `COW_WORKSPACE`。
+- `runtime_context.runtime_dir` 指向该实例的 `$COW_WORKSPACE/fitness_coach`。
 
-此时必须提醒用户：如果多个用户都这样使用，会共用同一套档案和每日记录。应先确认 CowAgent 是否能提供微信用户 ID、会话 ID、接收人 ID，或由用户指定一个 profile ID。
+如果同一台服务器有多个 CowAgent 实例，并且它们显示同一个 `COW_WORKSPACE`，不要继续建档。应先给每个 CowAgent 配置不同 workspace。
 
-可以这样问：
-
-```text
-为了避免多个用户共用同一套健身档案，我需要先确认你的数据隔离标识。这个标识可以是微信用户ID、会话ID、昵称拼音或你自定义的 profile ID。你希望用哪个 ID 保存你的健身数据？
-```
+本 skill 不询问 `FITNESS_COACH_USER_ID`，也不使用 `--user-id`。如果一个 CowAgent 实例内同时服务多个真实用户，本 skill 暂不负责用户级隔离。
 
 ## 第一轮必问
 
-用对话式一次收集，不要像表单审讯：
+核心字段足够前，不直接生成长期计划：
 
-```text
-为了后续建议能真正适合你，我先建一个基础档案。请尽量告诉我：
-1. 你的主要目标是什么？减脂、增肌、维持、力量、健康或其他？
-2. 年龄或出生年份、性别、身高、当前体重是多少？
-3. 训练经验大概多久？每周能练几天、每次多久？
-4. 有食物过敏、饮食限制或忌口吗？
-5. 有伤病、疼痛、医生限制或需要避免的动作吗？
-```
+1. 主要目标：减脂、增肌、维持、力量、体态、健康，优先级是什么。
+2. 性别、年龄或出生年份。
+3. 身高、当前体重、目标体重。
+4. 训练经验和当前水平。
+5. 每周可训练几天、每次大约多久。
+6. 饮食限制、过敏、宗教或伦理限制。
+7. 伤病、疼痛、医疗限制。
+
+用户拒答的非核心字段记为 `unknown`，不得编造。
 
 ## 第二轮按目标追问
 
-- 减脂：目标体重或围度、期限、当前饮食、饥饿耐受、外食频率。
-- 增肌：可接受脂肪增长程度、当前训练计划、器械、弱项肌群。
-- 力量：主要动作成绩、比赛或测试日期、训练模板偏好。
-- 健康：睡眠、压力、步数、工作活动量、医疗限制。
+根据目标选择性追问：
 
-用户拒答时记录为 `unknown`，不要编造。非核心字段可之后慢慢补。
+- 目标期限和可接受变化速度。
+- 当前饮食、外食频率、餐次数偏好、做饭能力、预算。
+- 当前训练计划、器械条件、主要动作水平、弱项肌群、训练偏好。
+- 平均睡眠、压力、步数或日常活动量。
+- 高风险时期：加班、出差、考试、聚餐、容易暴食的时段。
+- 沟通偏好：喜欢简短指令、详细解释、表格还是清单。
+
+## 初始化完成标准
+
+当核心字段足够时，执行：
+
+```bash
+python scripts/fitness_coach.py profile update --payload-json '<json>' --raw-text '<用户原文>'
+```
+
+然后用：
+
+```bash
+python scripts/fitness_coach.py profile status
+```
+
+确认 `initialized` 为 `true`。之后再进入 `assessment` 或 `program-creation`。

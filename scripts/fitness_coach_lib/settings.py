@@ -7,7 +7,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 
-SKILL_VERSION = "0.1.5"
+SKILL_VERSION = "0.1.6"
 DATA_SCHEMA_VERSION = 1
 TIMEZONE = ZoneInfo("Asia/Shanghai")
 TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
@@ -16,32 +16,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 WORKSPACE = Path(os.environ.get("COW_WORKSPACE", "~/cow")).expanduser()
 
 
-def sanitize_instance_id(value: str) -> str:
-    cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "-", value.strip())
-    return cleaned.strip(".-") or "default"
-
-
 def resolve_runtime_dir() -> Path:
     explicit_dir = os.environ.get("FITNESS_COACH_DATA_DIR")
     if explicit_dir:
         return Path(explicit_dir).expanduser()
-    user_id = (
-        os.environ.get("FITNESS_COACH_USER_ID")
-        or os.environ.get("COW_USER_ID")
-        or os.environ.get("COW_SESSION_ID")
-        or os.environ.get("COW_NOTIFY_SESSION_ID")
-    )
-    instance_id = (
-        os.environ.get("FITNESS_COACH_INSTANCE_ID")
-        or os.environ.get("COWAGENT_INSTANCE_ID")
-        or os.environ.get("COW_AGENT_INSTANCE_ID")
-    )
-    base_dir = WORKSPACE / "fitness_coach"
-    if instance_id:
-        base_dir = base_dir / "instances" / sanitize_instance_id(instance_id)
-    if user_id:
-        return base_dir / "users" / sanitize_instance_id(user_id)
-    return base_dir / "users" / "default"
+    return WORKSPACE / "fitness_coach"
 
 
 RUNTIME_DIR = resolve_runtime_dir()
@@ -82,27 +61,12 @@ DEFAULT_CONFIG = {
 }
 
 
-def current_identity() -> dict[str, str | bool]:
+def runtime_context() -> dict[str, str | bool]:
     explicit_dir = os.environ.get("FITNESS_COACH_DATA_DIR")
-    raw_user_id = (
-        os.environ.get("FITNESS_COACH_USER_ID")
-        or os.environ.get("COW_USER_ID")
-        or os.environ.get("COW_SESSION_ID")
-        or os.environ.get("COW_NOTIFY_SESSION_ID")
-    )
-    raw_instance_id = (
-        os.environ.get("FITNESS_COACH_INSTANCE_ID")
-        or os.environ.get("COWAGENT_INSTANCE_ID")
-        or os.environ.get("COW_AGENT_INSTANCE_ID")
-    )
-    sanitized_user_id = sanitize_instance_id(raw_user_id) if raw_user_id else "default"
-    sanitized_instance_id = sanitize_instance_id(raw_instance_id) if raw_instance_id else ""
     return {
+        "workspace": str(WORKSPACE),
         "runtime_dir": str(RUNTIME_DIR),
         "explicit_data_dir": bool(explicit_dir),
-        "instance_id": sanitized_instance_id,
-        "user_id": sanitized_user_id,
-        "using_default_user": not bool(raw_user_id) and not bool(explicit_dir),
     }
 
 

@@ -120,16 +120,7 @@ def build_cron_line(run_time: str, python_bin: str | None = None) -> str:
     log_path = RUNTIME_DIR / "fitness_coach.log"
     python_path = python_bin or sys.executable or "python3"
     env_parts = [f"COW_WORKSPACE={shlex.quote(str(WORKSPACE))}"]
-    for key in (
-        "FITNESS_COACH_DATA_DIR",
-        "FITNESS_COACH_INSTANCE_ID",
-        "COWAGENT_INSTANCE_ID",
-        "COW_AGENT_INSTANCE_ID",
-        "FITNESS_COACH_USER_ID",
-        "COW_USER_ID",
-        "COW_SESSION_ID",
-        "COW_NOTIFY_SESSION_ID",
-    ):
+    for key in ("FITNESS_COACH_DATA_DIR",):
         value = os.environ.get(key)
         if value:
             env_parts.append(f"{key}={shlex.quote(value)}")

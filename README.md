@@ -1,13 +1,13 @@
 # fitness-coach-skill
 
-面向 CowAgent 的长期健身饮食教练 skill。它把训练评估、饮食建议、每日记录、用户基础档案、上下文压缩、定时追问、导出迁移和版本检查放在一个可开源、可安装、可维护的技能目录里。
+面向 CowAgent 的长期健身饮食教练 skill。它把训练评估、饮食建议、每日记录、基础档案、上下文压缩、定时追问、导出迁移和版本检查放在一个可开源、可安装、可维护的技能目录里。
 
 ## 能力概览
 
-- 首次调用先建立用户基础档案，避免无上下文给计划。
+- 首次调用先建立基础档案，避免无上下文给计划。
 - 支持记录每日体重、饮食、训练、睡眠、心情、压力、疼痛等信息。
 - 默认每天 `22:00` 检查当天关键数据是否缺失，并通过 CowAgent 消息任务主动追问。
-- 咨询训练、减脂、增肌、饮食时，先读取用户档案和压缩历史上下文。
+- 咨询训练、减脂、增肌、饮食时，先读取档案和压缩历史上下文。
 - 支持导出、导入、备份、迁移、卸载和版本更新检查，降低数据丢失风险。
 - 编排已有子 skill：`assessment`、`program-creation`、`rp-training`、`rp-diet`、`schoenfeld-hypertrophy`、`sbs-training`、`nutritional-specialist`。
 
@@ -22,116 +22,113 @@ cow skill install HanShuheng/fitness-coach-skill
 如果你是手动安装，把本仓库放到 CowAgent 的技能目录，例如：
 
 ```bash
-~/cow/skills/fitness-coach-skill
+$COW_WORKSPACE/skills/fitness-coach-skill
 ```
 
-### 2. 初始化用户基础档案
+### 2. 确认当前 CowAgent workspace
+
+这个项目只是一个 skill，不是服务。它不会自己识别“是哪一个 CowAgent 实例”，也不再维护 `FITNESS_COACH_USER_ID` 或 `--user-id`。
+
+它只按当前进程的 `COW_WORKSPACE` 保存数据：
 
 ```bash
-python scripts/fitness_coach.py --user-id wx-user-001 profile init
-python scripts/fitness_coach.py --user-id wx-user-001 profile status
+python scripts/fitness_coach.py info
+```
+
+请确认输出里的：
+
+- `runtime_context.workspace` 是当前 CowAgent 实例的 workspace。
+- `runtime_context.runtime_dir` 是这个实例的健身数据目录。
+
+默认数据目录是：
+
+```text
+$COW_WORKSPACE/fitness_coach/
+```
+
+### 3. 初始化基础档案
+
+```bash
+python scripts/fitness_coach.py profile init
+python scripts/fitness_coach.py profile status
 ```
 
 首次真正服务用户时，skill 会先询问基础信息：目标、年龄或出生年份、性别、身高体重、训练经验、每周可训练时间、饮食限制、过敏和伤病限制。
 
-### 3. 记录当天数据
+### 4. 记录当天数据
 
 ```bash
-python scripts/fitness_coach.py --user-id wx-user-001 record \
+python scripts/fitness_coach.py record \
   --payload-json '{"body":{"weight_kg":70.2},"nutrition":{"summary":"饮食正常"},"training":{"status":"trained"},"recovery":{"sleep_hours":7,"mood":"稳定"}}' \
   --raw-text "今天体重70.2，练胸，睡了7小时。"
 ```
 
-### 4. 开启每日缺失项检查
+### 5. 开启每日缺失项检查
 
 默认检查时间是晚上 `22:00`：
 
 ```bash
-python scripts/fitness_coach.py --user-id wx-user-001 setup-schedule --yes
+python scripts/fitness_coach.py setup-schedule --yes
 ```
 
 如果只想预览 crontab：
 
 ```bash
-python scripts/fitness_coach.py --user-id wx-user-001 setup-schedule
+python scripts/fitness_coach.py setup-schedule
 ```
 
-### 5. 查看状态
+`setup-schedule` 生成的 cron 行会显式带上当前 `COW_WORKSPACE`，避免系统 cron 运行时丢失 workspace。
 
-```bash
-python scripts/fitness_coach.py --user-id wx-user-001 info
-```
+## 多 CowAgent 实例怎么隔离数据
 
-## 数据保存位置
+本 skill 的隔离边界是 `COW_WORKSPACE`。
 
-这个项目是 skill，不是常驻服务。它能区分“是谁”，靠的是 CowAgent 或调用命令传入一个稳定的用户/会话标识。
-
-推荐每次调用脚本都带上。首次使用时，应先确认这个 ID：
-
-```bash
-python scripts/fitness_coach.py --user-id "<用户或会话ID>" info
-```
-
-例如微信用户 `wx-user-001`：
-
-```bash
-python scripts/fitness_coach.py --user-id wx-user-001 profile status
-```
-
-这个用户的数据会保存在：
+如果同一台服务器运行多个 CowAgent，请给每个 CowAgent 实例配置不同 workspace，例如：
 
 ```text
-$COW_WORKSPACE/fitness_coach/users/wx-user-001/
+CowAgent A: COW_WORKSPACE=/root/cow-a
+CowAgent B: COW_WORKSPACE=/root/cow-b
 ```
 
-如果不传 `--user-id`，会落到：
+对应数据目录分别是：
 
 ```text
-$COW_WORKSPACE/fitness_coach/users/default/
+/root/cow-a/fitness_coach/
+/root/cow-b/fitness_coach/
 ```
 
-这适合单用户测试，不适合多个真实用户长期使用。
+这样两个 CowAgent 不会共用档案、每日记录、提醒任务、导出包和备份。
 
-`info` 和 `profile status` 会输出 `isolation.using_default_user`。如果它是 `true`，说明当前没有传用户 ID，多个用户可能共用 `default` 数据。
+注意：
 
-如果同一台服务器运行多个 CowAgent，首要原则是每个 CowAgent 实例使用独立 `COW_WORKSPACE`，例如 `/root/cow-a` 和 `/root/cow-b`。这会让 skill 安装目录、scheduler、运行数据天然隔离。完整说明见 `references/cowagent-multi-instance-workspace.md`。
+- 不要让多个 CowAgent 实例共用同一个 `COW_WORKSPACE`。
+- 安装 skill 时，应安装到各自 workspace 的 `skills/` 下。
+- 首次使用前运行 `python scripts/fitness_coach.py info`，确认 `runtime_context.workspace`。
+- 如果一个 CowAgent 实例内部同时服务多个真实用户，本 skill 暂不做用户级隔离；需要由 CowAgent 上层路由或独立 workspace 解决。
 
-只有在确实需要同一个 `COW_WORKSPACE` 下再区分逻辑实例时，才额外设置：
+完整说明见：
+
+- `references/cowagent-multi-instance-workspace.md`
+- `references/multi-instance-deployment.md`
+
+## 可选数据目录覆盖
+
+通常只需要配置 `COW_WORKSPACE`。只有在你明确希望把健身数据放到 workspace 之外时，才设置：
 
 ```bash
-export FITNESS_COACH_INSTANCE_ID="wxbot-main"
-```
-
-设置后，真实数据会保存到：
-
-```text
-$COW_WORKSPACE/fitness_coach/instances/wxbot-main/users/<user-id>/
-```
-
-也可以直接指定完整数据目录，优先级最高：
-
-```bash
-export FITNESS_COACH_DATA_DIR="/data/cowagent/wxbot-main/fitness_coach"
+export FITNESS_COACH_DATA_DIR="/data/cowagent-a/fitness_coach"
 ```
 
 路径解析优先级：
 
 1. `FITNESS_COACH_DATA_DIR`
-2. `FITNESS_COACH_INSTANCE_ID` / `COWAGENT_INSTANCE_ID` / `COW_AGENT_INSTANCE_ID`
-3. `--user-id` / `FITNESS_COACH_USER_ID` / `COW_USER_ID` / `COW_SESSION_ID`
-4. `$COW_WORKSPACE/fitness_coach/users/default`
+2. `$COW_WORKSPACE/fitness_coach`
 
-如果你不知道“在哪里设置环境变量”，看这里：
-
-- systemd 服务：`sudo systemctl edit cowagent.service`，在 `[Service]` 下写 `Environment=FITNESS_COACH_INSTANCE_ID=wxbot-main`。
-- 手动启动：运行 `FITNESS_COACH_INSTANCE_ID=wxbot-main cow start`。
-- 验证：运行 `python scripts/fitness_coach.py info`，查看输出里的 `runtime_dir`。
-
-完整步骤见 `references/multi-instance-deployment.md`。
+## 数据文件
 
 主要文件：
 
-- `profile.md`：用户基础档案。
+- `profile.md`：基础档案。
 - `config.json`：提醒时间、必填项、版本检查地址和跳过版本。
 - `data/daily/YYYY-MM-DD.md`：每日记录。
 - `data/memory/*.md`：长期记忆。
@@ -143,7 +140,7 @@ export FITNESS_COACH_DATA_DIR="/data/cowagent/wxbot-main/fitness_coach"
 
 ## 导出、迁移与恢复
 
-导出全部用户数据：
+导出全部数据：
 
 ```bash
 python scripts/fitness_coach.py export --format zip
@@ -197,7 +194,7 @@ python scripts/fitness_coach.py prepare-update --target-version 0.2.0
 
 ## 卸载
 
-卸载 skill 代码不会自动删除 `~/cow/fitness_coach/` 用户数据。推荐流程：
+卸载 skill 代码不会自动删除 `$COW_WORKSPACE/fitness_coach/` 数据。推荐流程：
 
 ```bash
 python scripts/fitness_coach.py export --format zip
@@ -220,34 +217,7 @@ python scripts/fitness_coach.py uninstall --remove-data --yes
 
 ```bash
 python -m pytest -q tests
-```
-
-本地验证示例：
-
-```bash
 python -m compileall -q scripts tests
-python scripts/fitness_coach.py version
-python scripts/fitness_coach.py uninstall --dry-run
 ```
 
-## 目录结构
-
-```text
-.
-├── SKILL.md
-├── agents/openai.yaml
-├── examples/config.example.json
-├── references/
-├── scripts/
-│   ├── fitness_coach.py
-│   └── fitness_coach_lib/
-└── tests/
-```
-
-## 免责声明
-
-本项目仅用于学习、研究和个人健康管理自动化实践，不构成医疗建议、诊断、治疗方案或营养处方。涉及疾病、伤病、药物、进食障碍、妊娠、心血管、肾病等高风险情况时，请咨询合格医生、注册营养师或相关专业人士。
-
-## 许可证
-
-MIT License。详见 `LICENSE`。
+测试时请使用临时 `COW_WORKSPACE`，避免污染真实数据。

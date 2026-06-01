@@ -1,5 +1,13 @@
 # 更新日志
 
+## 0.1.6 - 2026-06-01
+
+- 移除用户层数据隔离实现，脚本不再解析 `--user-id` / `--profile-id`，也不再读取 `FITNESS_COACH_USER_ID` 等用户身份环境变量。
+- 默认数据目录恢复为 `$COW_WORKSPACE/fitness_coach`，多 CowAgent 实例只通过独立 `COW_WORKSPACE` 隔离。
+- `info` 和 `profile status` 改为输出 `runtime_context`，展示 `workspace`、`runtime_dir` 和是否使用显式数据目录。
+- `setup-schedule` 生成的 crontab 只保留 `COW_WORKSPACE` 和可选 `FITNESS_COACH_DATA_DIR`，避免把已经废弃的身份变量写入计划任务。
+- README、SKILL 和引用文档改为中文说明 workspace 隔离模型。
+
 ## 0.1.5 - 2026-06-01
 
 - 根据 CowAgent 多实例 workspace 文档校正隔离说明：多实例首要使用独立 `COW_WORKSPACE`。

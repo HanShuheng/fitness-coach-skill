@@ -1,73 +1,86 @@
 # 数据契约
 
-## 目录
+本文件说明 fitness-coach-skill 的真实数据保存位置、文件结构和兼容性规则。
 
-真实数据只保存到运行数据目录。skill 不是服务，不能凭空知道当前用户是谁；调用方必须传入稳定用户/会话标识。
+## 隔离原则
 
-推荐调用方式：
+本 skill 是 CowAgent 的一个 skill，不是单独服务。它不维护 `FITNESS_COACH_USER_ID`、`--user-id` 或用户级目录。
 
-```bash
-python scripts/fitness_coach.py --user-id "<用户或会话ID>" info
-```
-
-默认结构是：
+默认数据目录只由 CowAgent 实例的 `COW_WORKSPACE` 决定：
 
 ```text
-fitness_coach/
-└── users/
-    └── <user-id>/
-        ├── config.json
-        ├── profile.md
-        └── data/
-            ├── daily/YYYY-MM-DD.md
-            ├── memory/*.md
-            ├── summaries/weekly/*.md
-            ├── summaries/monthly/*.md
-            ├── index.json
-            ├── update_state.json
-            ├── exports/*.zip
-            ├── backups/
-            └── migrations/
+$COW_WORKSPACE/fitness_coach/
 ```
 
-## 多实例隔离
+如果同一台服务器运行多个 CowAgent 实例，必须给每个实例配置独立 `COW_WORKSPACE`。不要让多个实例共用同一个 workspace。
 
-同一台服务器运行多个 CowAgent 时，如果它们共用同一个 `COW_WORKSPACE`，默认路径会冲突。请使用环境变量隔离：
+只有在明确需要把数据放到 workspace 之外时，才设置完整覆盖目录：
 
 ```bash
-export FITNESS_COACH_INSTANCE_ID="wxbot-main"
-```
-
-保存路径会变为：
-
-```text
-$COW_WORKSPACE/fitness_coach/instances/wxbot-main/users/<user-id>/
-```
-
-也可以直接指定完整目录：
-
-```bash
-export FITNESS_COACH_DATA_DIR="/data/cowagent/wxbot-main/fitness_coach"
+export FITNESS_COACH_DATA_DIR="/data/cowagent-a/fitness_coach"
 ```
 
 路径优先级：
 
 1. `FITNESS_COACH_DATA_DIR`
-2. `FITNESS_COACH_INSTANCE_ID` / `COWAGENT_INSTANCE_ID` / `COW_AGENT_INSTANCE_ID`
-3. `--user-id` / `FITNESS_COACH_USER_ID` / `COW_USER_ID` / `COW_SESSION_ID`
-4. `$COW_WORKSPACE/fitness_coach/users/default`
+2. `$COW_WORKSPACE/fitness_coach`
 
-不会设置环境变量时，先读 `references/multi-instance-deployment.md`。里面写了 systemd、命令行手动启动和验证方法。
+## 目录结构
+
+```text
+$COW_WORKSPACE/fitness_coach/
+├── profile.md
+├── config.json
+├── fitness_coach.log
+└── data/
+    ├── daily/
+    │   └── YYYY-MM-DD.md
+    ├── memory/
+    ├── summaries/
+    │   ├── weekly/
+    │   └── monthly/
+    ├── exports/
+    ├── backups/
+    ├── migrations/
+    ├── index.json
+    └── update_state.json
+```
+
+`$COW_WORKSPACE/scheduler/tasks.json` 属于 CowAgent workspace 的调度任务文件，不放在 `fitness_coach/` 内。
 
 ## 主真相
 
-- Markdown 文件是主真相：`profile.md`、`daily/*.md`、`memory/*.md`。
-- `index.json` 和 summaries 是派生数据，可重建。
-- `references/` 只存模板，不存真实用户数据。
+- Markdown 文件是主真相：`profile.md`、`data/daily/*.md`、`data/memory/*.md`、`data/summaries/**/*.md`。
+- `index.json`、摘要和缓存类文件必须可重建。
+- 更新 skill 代码不得覆盖 `$COW_WORKSPACE/fitness_coach/`。
+- 迁移必须显式运行，并在写入前自动备份。
 
-## 扩展规则
+## Frontmatter
 
-- 每个 Markdown 文件必须保留 frontmatter：`schema_version`、`created_at`、`updated_at`、`record_id`、`source`。
-- 新字段优先加入已有对象；无法归类时放入 `custom`。
-- 旧版本脚本必须忽略未知字段并原样保留。
-- 字段重命名时保留旧字段兼容读取，不做破坏性删除。
+每个 Markdown 数据文件应包含 frontmatter：
+
+```yaml
+---
+schema_version: 1
+initialized: true
+created_at: "2026-06-01T22:00:00+08:00"
+updated_at: "2026-06-01T22:00:00+08:00"
+record_id: "profile 或 YYYY-MM-DD"
+source: "fitness-coach-skill"
+---
+```
+
+## 扩展兼容
+
+- 允许 `custom` / `extra` 保存未来字段。
+- 旧脚本必须忽略未知字段，并尽量原样保留。
+- 字段重命名不做破坏性迁移；优先新增字段并兼容读取旧字段。
+- 导入、迁移、卸载删除数据前必须能先导出或备份。
+
+## 验证命令
+
+```bash
+python scripts/fitness_coach.py info
+python scripts/fitness_coach.py export --format zip
+python scripts/fitness_coach.py rebuild-index
+```

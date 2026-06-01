@@ -50,7 +50,7 @@ def run_cli_with_env(
 
 
 def runtime_dir(workspace: Path) -> Path:
-    return workspace / "fitness_coach" / "users" / "default"
+    return workspace / "fitness_coach"
 
 
 def today() -> str:
@@ -287,7 +287,7 @@ def test_skip_version_and_check_update_use_persisted_state(tmp_path: Path) -> No
     payload = extract_json_object(check_result.stdout)
 
     assert skip_result.returncode == 0
-    assert payload["current_version"] == "0.1.5"
+    assert payload["current_version"] == "0.1.6"
     assert payload["remote_version"] == "0.2.0"
     assert payload["has_update"] is True
     assert payload["skipped"] is True
@@ -324,18 +324,12 @@ def test_uninstall_dry_run_reports_targets_without_deleting_data(tmp_path: Path)
     assert (runtime_dir(workspace) / "data" / "daily" / f"{day}.md").exists()
 
 
-def test_runtime_dir_can_be_isolated_by_instance_id(tmp_path: Path) -> None:
+def test_runtime_dir_uses_cow_workspace(tmp_path: Path) -> None:
     workspace = tmp_path / "cow"
-    result = run_cli_with_env(
-        workspace,
-        {"FITNESS_COACH_INSTANCE_ID": "wxbot/main"},
-        "profile",
-        "init",
-    )
+    result = run_cli(workspace, "profile", "init")
 
     assert result.returncode == 0
-    assert (workspace / "fitness_coach" / "instances" / "wxbot-main" / "users" / "default" / "profile.md").exists()
-    assert not (workspace / "fitness_coach" / "users" / "default" / "profile.md").exists()
+    assert (workspace / "fitness_coach" / "profile.md").exists()
 
 
 def test_explicit_data_dir_has_highest_priority(tmp_path: Path) -> None:
@@ -344,7 +338,6 @@ def test_explicit_data_dir_has_highest_priority(tmp_path: Path) -> None:
     result = run_cli_with_env(
         workspace,
         {
-            "FITNESS_COACH_INSTANCE_ID": "ignored",
             "FITNESS_COACH_DATA_DIR": str(data_dir),
         },
         "profile",
@@ -353,39 +346,18 @@ def test_explicit_data_dir_has_highest_priority(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert (data_dir / "profile.md").exists()
-    assert not (workspace / "fitness_coach" / "instances" / "ignored" / "profile.md").exists()
+    assert not (workspace / "fitness_coach" / "profile.md").exists()
 
 
-def test_runtime_dir_can_be_isolated_by_user_id(tmp_path: Path) -> None:
-    workspace = tmp_path / "cow"
-    result_a = run_cli_with_env(workspace, {}, "--user-id", "wx/user/a", "profile", "init")
-    result_b = run_cli_with_env(workspace, {}, "--user-id", "wx-user-b", "profile", "init")
-
-    assert result_a.returncode == 0
-    assert result_b.returncode == 0
-    assert (workspace / "fitness_coach" / "users" / "wx-user-a" / "profile.md").exists()
-    assert (workspace / "fitness_coach" / "users" / "wx-user-b" / "profile.md").exists()
-    assert not (workspace / "fitness_coach" / "users" / "default" / "profile.md").exists()
-
-
-def test_info_reports_default_user_isolation_warning(tmp_path: Path) -> None:
+def test_info_reports_runtime_context(tmp_path: Path) -> None:
     workspace = tmp_path / "cow"
     result = run_cli(workspace, "info")
     payload = extract_json_object(result.stdout)
 
     assert result.returncode == 0
-    assert payload["isolation"]["user_id"] == "default"
-    assert payload["isolation"]["using_default_user"] is True
-
-
-def test_info_reports_explicit_user_isolation(tmp_path: Path) -> None:
-    workspace = tmp_path / "cow"
-    result = run_cli_with_env(workspace, {}, "--user-id", "wx/user/a", "info")
-    payload = extract_json_object(result.stdout)
-
-    assert result.returncode == 0
-    assert payload["isolation"]["user_id"] == "wx-user-a"
-    assert payload["isolation"]["using_default_user"] is False
+    assert payload["runtime_context"]["workspace"] == str(workspace)
+    assert payload["runtime_context"]["runtime_dir"] == str(workspace / "fitness_coach")
+    assert payload["runtime_context"]["explicit_data_dir"] is False
 
 
 def test_version_command_does_not_create_default_runtime_dir(tmp_path: Path) -> None:
@@ -393,23 +365,15 @@ def test_version_command_does_not_create_default_runtime_dir(tmp_path: Path) -> 
     result = run_cli(workspace, "version")
 
     assert result.returncode == 0
-    assert "0.1.5" in result.stdout
+    assert "0.1.6" in result.stdout
     assert not (workspace / "fitness_coach").exists()
 
 
-def test_setup_schedule_cron_line_keeps_workspace_and_user_id(tmp_path: Path) -> None:
+def test_setup_schedule_cron_line_keeps_workspace(tmp_path: Path) -> None:
     workspace = tmp_path / "cow"
-    result = run_cli_with_env(
-        workspace,
-        {},
-        "--user-id",
-        "wx/user/a",
-        "setup-schedule",
-        "--daily-time",
-        "22:00",
-    )
+    result = run_cli(workspace, "setup-schedule", "--daily-time", "22:00")
 
     assert result.returncode == 0
     assert f"COW_WORKSPACE={workspace}" in result.stdout
-    assert "FITNESS_COACH_USER_ID=wx/user/a" in result.stdout
-    assert "fitness_coach/users/wx-user-a/fitness_coach.log" in result.stdout
+    assert "FITNESS_COACH_USER_ID" not in result.stdout
+    assert "fitness_coach/fitness_coach.log" in result.stdout
