@@ -70,6 +70,32 @@ python scripts/fitness_coach.py info
 ~/cow/fitness_coach/
 ```
 
+如果同一台服务器只运行一个 CowAgent，这个默认路径即可。
+
+如果同一台服务器运行多个 CowAgent，请为每个实例设置独立环境变量，避免多个机器人读写同一份用户数据：
+
+```bash
+export FITNESS_COACH_INSTANCE_ID="wxbot-main"
+```
+
+设置后，真实数据会保存到：
+
+```text
+$COW_WORKSPACE/fitness_coach/instances/wxbot-main/
+```
+
+也可以直接指定完整数据目录，优先级最高：
+
+```bash
+export FITNESS_COACH_DATA_DIR="/data/cowagent/wxbot-main/fitness_coach"
+```
+
+路径解析优先级：
+
+1. `FITNESS_COACH_DATA_DIR`
+2. `FITNESS_COACH_INSTANCE_ID` / `COWAGENT_INSTANCE_ID` / `COW_AGENT_INSTANCE_ID`
+3. `$COW_WORKSPACE/fitness_coach`
+
 主要文件：
 
 - `profile.md`：用户基础档案。
@@ -192,4 +218,3 @@ python scripts/fitness_coach.py uninstall --dry-run
 ## 许可证
 
 MIT License。详见 `LICENSE`。
-

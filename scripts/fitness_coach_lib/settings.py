@@ -7,14 +7,35 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 
-SKILL_VERSION = "0.1.0"
+SKILL_VERSION = "0.1.1"
 DATA_SCHEMA_VERSION = 1
 TIMEZONE = ZoneInfo("Asia/Shanghai")
 TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 WORKSPACE = Path(os.environ.get("COW_WORKSPACE", "~/cow")).expanduser()
-RUNTIME_DIR = WORKSPACE / "fitness_coach"
+
+
+def sanitize_instance_id(value: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "-", value.strip())
+    return cleaned.strip(".-") or "default"
+
+
+def resolve_runtime_dir() -> Path:
+    explicit_dir = os.environ.get("FITNESS_COACH_DATA_DIR")
+    if explicit_dir:
+        return Path(explicit_dir).expanduser()
+    instance_id = (
+        os.environ.get("FITNESS_COACH_INSTANCE_ID")
+        or os.environ.get("COWAGENT_INSTANCE_ID")
+        or os.environ.get("COW_AGENT_INSTANCE_ID")
+    )
+    if instance_id:
+        return WORKSPACE / "fitness_coach" / "instances" / sanitize_instance_id(instance_id)
+    return WORKSPACE / "fitness_coach"
+
+
+RUNTIME_DIR = resolve_runtime_dir()
 CONFIG_FILE = RUNTIME_DIR / "config.json"
 PROFILE_FILE = RUNTIME_DIR / "profile.md"
 DATA_DIR = RUNTIME_DIR / "data"

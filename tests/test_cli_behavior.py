@@ -29,6 +29,26 @@ def run_cli(workspace: Path, *args: str, check: bool = True) -> subprocess.Compl
     )
 
 
+def run_cli_with_env(
+    workspace: Path,
+    extra_env: dict[str, str],
+    *args: str,
+    check: bool = True,
+) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["COW_WORKSPACE"] = str(workspace)
+    env["PYTHONPATH"] = str(ROOT / "scripts")
+    env.update(extra_env)
+    return subprocess.run(
+        [sys.executable, str(CLI), *args],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=check,
+    )
+
+
 def runtime_dir(workspace: Path) -> Path:
     return workspace / "fitness_coach"
 
@@ -267,7 +287,7 @@ def test_skip_version_and_check_update_use_persisted_state(tmp_path: Path) -> No
     payload = extract_json_object(check_result.stdout)
 
     assert skip_result.returncode == 0
-    assert payload["current_version"] == "0.1.0"
+    assert payload["current_version"] == "0.1.1"
     assert payload["remote_version"] == "0.2.0"
     assert payload["has_update"] is True
     assert payload["skipped"] is True
@@ -302,3 +322,35 @@ def test_uninstall_dry_run_reports_targets_without_deleting_data(tmp_path: Path)
     assert str(runtime_dir(workspace)) in result.stdout
     assert (runtime_dir(workspace) / "profile.md").exists()
     assert (runtime_dir(workspace) / "data" / "daily" / f"{day}.md").exists()
+
+
+def test_runtime_dir_can_be_isolated_by_instance_id(tmp_path: Path) -> None:
+    workspace = tmp_path / "cow"
+    result = run_cli_with_env(
+        workspace,
+        {"FITNESS_COACH_INSTANCE_ID": "wxbot/main"},
+        "profile",
+        "init",
+    )
+
+    assert result.returncode == 0
+    assert (workspace / "fitness_coach" / "instances" / "wxbot-main" / "profile.md").exists()
+    assert not (workspace / "fitness_coach" / "profile.md").exists()
+
+
+def test_explicit_data_dir_has_highest_priority(tmp_path: Path) -> None:
+    workspace = tmp_path / "cow"
+    data_dir = tmp_path / "custom-data" / "fitness"
+    result = run_cli_with_env(
+        workspace,
+        {
+            "FITNESS_COACH_INSTANCE_ID": "ignored",
+            "FITNESS_COACH_DATA_DIR": str(data_dir),
+        },
+        "profile",
+        "init",
+    )
+
+    assert result.returncode == 0
+    assert (data_dir / "profile.md").exists()
+    assert not (workspace / "fitness_coach" / "instances" / "ignored" / "profile.md").exists()

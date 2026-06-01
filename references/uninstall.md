@@ -1,6 +1,6 @@
 # 卸载说明
 
-卸载 skill 代码不会自动删除 `~/cow/fitness_coach/` 用户数据。推荐先导出，再移除提醒，最后删除代码。
+卸载 skill 代码不会自动删除用户数据。默认数据在 `~/cow/fitness_coach/`；如果配置了 `FITNESS_COACH_INSTANCE_ID` 或 `FITNESS_COACH_DATA_DIR`，请先用同一组环境变量运行 `info` 确认实际目录。
 
 ## 推荐流程
 

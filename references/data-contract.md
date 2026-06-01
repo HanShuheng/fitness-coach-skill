@@ -2,7 +2,7 @@
 
 ## 目录
 
-真实数据只保存到 `~/cow/fitness_coach/`：
+真实数据只保存到运行数据目录。默认是 `~/cow/fitness_coach/`：
 
 ```text
 fitness_coach/
@@ -19,6 +19,32 @@ fitness_coach/
     ├── backups/
     └── migrations/
 ```
+
+## 多实例隔离
+
+同一台服务器运行多个 CowAgent 时，如果它们共用同一个 `COW_WORKSPACE`，默认路径会冲突。请使用环境变量隔离：
+
+```bash
+export FITNESS_COACH_INSTANCE_ID="wxbot-main"
+```
+
+保存路径会变为：
+
+```text
+$COW_WORKSPACE/fitness_coach/instances/wxbot-main/
+```
+
+也可以直接指定完整目录：
+
+```bash
+export FITNESS_COACH_DATA_DIR="/data/cowagent/wxbot-main/fitness_coach"
+```
+
+路径优先级：
+
+1. `FITNESS_COACH_DATA_DIR`
+2. `FITNESS_COACH_INSTANCE_ID` / `COWAGENT_INSTANCE_ID` / `COW_AGENT_INSTANCE_ID`
+3. `$COW_WORKSPACE/fitness_coach`
 
 ## 主真相
 

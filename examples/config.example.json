@@ -1,5 +1,5 @@
 {
-  "_comment": "fitness-coach-skill 配置示例。真实配置默认保存到 ~/cow/fitness_coach/config.json。",
+  "_comment": "fitness-coach-skill 配置示例。真实配置默认保存到 ~/cow/fitness_coach/config.json。多 CowAgent 实例请设置 FITNESS_COACH_INSTANCE_ID 或 FITNESS_COACH_DATA_DIR。",
   "schema_version": 1,
   "daily_check_time": "22:00",
   "timezone": "Asia/Shanghai",
