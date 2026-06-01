@@ -7,7 +7,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 
-SKILL_VERSION = "0.1.3"
+SKILL_VERSION = "0.1.4"
 DATA_SCHEMA_VERSION = 1
 TIMEZONE = ZoneInfo("Asia/Shanghai")
 TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
@@ -80,6 +80,30 @@ DEFAULT_CONFIG = {
     "version_check_url": DEFAULT_UPDATE_CHECK_URL,
     "skipped_versions": [],
 }
+
+
+def current_identity() -> dict[str, str | bool]:
+    explicit_dir = os.environ.get("FITNESS_COACH_DATA_DIR")
+    raw_user_id = (
+        os.environ.get("FITNESS_COACH_USER_ID")
+        or os.environ.get("COW_USER_ID")
+        or os.environ.get("COW_SESSION_ID")
+        or os.environ.get("COW_NOTIFY_SESSION_ID")
+    )
+    raw_instance_id = (
+        os.environ.get("FITNESS_COACH_INSTANCE_ID")
+        or os.environ.get("COWAGENT_INSTANCE_ID")
+        or os.environ.get("COW_AGENT_INSTANCE_ID")
+    )
+    sanitized_user_id = sanitize_instance_id(raw_user_id) if raw_user_id else "default"
+    sanitized_instance_id = sanitize_instance_id(raw_instance_id) if raw_instance_id else ""
+    return {
+        "runtime_dir": str(RUNTIME_DIR),
+        "explicit_data_dir": bool(explicit_dir),
+        "instance_id": sanitized_instance_id,
+        "user_id": sanitized_user_id,
+        "using_default_user": not bool(raw_user_id) and not bool(explicit_dir),
+    }
 
 
 def now_local() -> datetime:

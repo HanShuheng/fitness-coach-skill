@@ -287,7 +287,7 @@ def test_skip_version_and_check_update_use_persisted_state(tmp_path: Path) -> No
     payload = extract_json_object(check_result.stdout)
 
     assert skip_result.returncode == 0
-    assert payload["current_version"] == "0.1.3"
+    assert payload["current_version"] == "0.1.4"
     assert payload["remote_version"] == "0.2.0"
     assert payload["has_update"] is True
     assert payload["skipped"] is True
@@ -366,3 +366,23 @@ def test_runtime_dir_can_be_isolated_by_user_id(tmp_path: Path) -> None:
     assert (workspace / "fitness_coach" / "users" / "wx-user-a" / "profile.md").exists()
     assert (workspace / "fitness_coach" / "users" / "wx-user-b" / "profile.md").exists()
     assert not (workspace / "fitness_coach" / "users" / "default" / "profile.md").exists()
+
+
+def test_info_reports_default_user_isolation_warning(tmp_path: Path) -> None:
+    workspace = tmp_path / "cow"
+    result = run_cli(workspace, "info")
+    payload = extract_json_object(result.stdout)
+
+    assert result.returncode == 0
+    assert payload["isolation"]["user_id"] == "default"
+    assert payload["isolation"]["using_default_user"] is True
+
+
+def test_info_reports_explicit_user_isolation(tmp_path: Path) -> None:
+    workspace = tmp_path / "cow"
+    result = run_cli_with_env(workspace, {}, "--user-id", "wx/user/a", "info")
+    payload = extract_json_object(result.stdout)
+
+    assert result.returncode == 0
+    assert payload["isolation"]["user_id"] == "wx-user-a"
+    assert payload["isolation"]["using_default_user"] is False

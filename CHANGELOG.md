@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.1.4 - 2026-06-01
+
+- 首次使用流程增加“先确认数据隔离身份”的说明。
+- `info` 和 `profile status` 输出当前隔离状态，包含 `user_id`、`instance_id`、`runtime_dir` 和是否使用 `users/default`。
+- 文档明确：拿不到稳定用户 ID 时，应先提醒用户 default 目录可能被多人共用。
+
 ## 0.1.3 - 2026-06-01
 
 - 增加用户/会话级数据隔离，支持 `--user-id` / `--profile-id` 和 `FITNESS_COACH_USER_ID`。

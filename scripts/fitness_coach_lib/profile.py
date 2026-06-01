@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .settings import DATA_SCHEMA_VERSION, PROFILE_FILE, ensure_dirs, now_local
+from .settings import DATA_SCHEMA_VERSION, PROFILE_FILE, ensure_dirs, now_local, current_identity
 from .storage import atomic_write_text, deep_merge, extract_latest_payload, format_frontmatter, parse_frontmatter
 
 
@@ -139,6 +139,7 @@ def profile_status() -> dict[str, Any]:
         "exists": PROFILE_FILE.exists(),
         "initialized": initialized and not missing,
         "missing_core_fields": missing,
+        "isolation": current_identity(),
         "path": str(PROFILE_FILE),
     }
 

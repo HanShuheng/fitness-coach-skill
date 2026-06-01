@@ -1,6 +1,28 @@
 # 首次建档问题模板
 
-首次调用本 skill 时，先检查 `profile status`。若未初始化，先建档，不直接给完整计划。
+首次调用本 skill 时，先确认数据隔离身份，再检查 `profile status`。若未初始化，先建档，不直接给完整计划。
+
+## 第零步：确认数据隔离身份
+
+本项目是 skill，不是服务，不能自动知道当前是谁。调用方应尽量传稳定用户或会话 ID：
+
+```bash
+python scripts/fitness_coach.py --user-id "<用户或会话ID>" profile status
+```
+
+如果 `profile status` 或 `info` 输出中 `isolation.using_default_user` 为 `true`，说明当前数据会落到：
+
+```text
+$COW_WORKSPACE/fitness_coach/users/default/
+```
+
+此时必须提醒用户：如果多个用户都这样使用，会共用同一套档案和每日记录。应先确认 CowAgent 是否能提供微信用户 ID、会话 ID、接收人 ID，或由用户指定一个 profile ID。
+
+可以这样问：
+
+```text
+为了避免多个用户共用同一套健身档案，我需要先确认你的数据隔离标识。这个标识可以是微信用户ID、会话ID、昵称拼音或你自定义的 profile ID。你希望用哪个 ID 保存你的健身数据？
+```
 
 ## 第一轮必问
 

@@ -66,7 +66,7 @@ python scripts/fitness_coach.py info
 
 这个项目是 skill，不是常驻服务。它能区分“是谁”，靠的是 CowAgent 或调用命令传入一个稳定的用户/会话标识。
 
-推荐每次调用脚本都带上：
+推荐每次调用脚本都带上。首次使用时，应先确认这个 ID：
 
 ```bash
 python scripts/fitness_coach.py --user-id "<用户或会话ID>" info
@@ -91,6 +91,8 @@ $COW_WORKSPACE/fitness_coach/users/default/
 ```
 
 这适合单用户测试，不适合多个真实用户长期使用。
+
+`info` 和 `profile status` 会输出 `isolation.using_default_user`。如果它是 `true`，说明当前没有传用户 ID，多个用户可能共用 `default` 数据。
 
 如果同一台服务器运行多个 CowAgent，再为每个 CowAgent 实例设置独立环境变量：
 
