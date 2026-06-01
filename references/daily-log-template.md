@@ -1,6 +1,6 @@
 # 每日记录模板
 
-真实记录保存为 `~/cow/fitness_coach/data/daily/YYYY-MM-DD.md`。本文件只是模板。
+真实记录默认保存为 `$COW_WORKSPACE/fitness_coach/data/daily/YYYY-MM-DD.md`。本文件只是模板。
 
 ## Frontmatter
 

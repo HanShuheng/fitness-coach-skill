@@ -1,7 +1,7 @@
 ---
 name: fitness-coach-skill
 description: 用于健身教练场景的 CowAgent 编排 skill，覆盖训练评估、增肌训练、SBS 模板、饮食宏量、餐食个性化、长期记录和完整训练饮食计划，并按需要路由到子 skill。
-version: "0.1.6"
+version: "0.1.7"
 entrypoint: "scripts/fitness_coach.py"
 post_install_command: "python scripts/fitness_coach.py version"
 config_file: "$FITNESS_COACH_DATA_DIR/config.json 或 $COW_WORKSPACE/fitness_coach/config.json"
@@ -27,7 +27,7 @@ version_check_url: "https://raw.githubusercontent.com/HanShuheng/fitness-coach-s
 - 入口命令：`python scripts/fitness_coach.py <command>`。
 - 本 skill 不再维护 `FITNESS_COACH_USER_ID`、`--user-id` 或 `users/default` 这类用户层隔离。它只按 CowAgent 实例的 `COW_WORKSPACE` 保存数据。
 - 默认数据目录是 `$COW_WORKSPACE/fitness_coach`，例如 `profile.md`、`config.json`、`data/daily/`、`data/summaries/`、`data/exports/` 都在这个目录下。
-- 多 CowAgent 实例部署时，必须给每个实例配置独立 `COW_WORKSPACE`。不要让多个实例共用同一个 workspace。详细说明见 `references/cowagent-multi-instance-workspace.md` 和 `references/multi-instance-deployment.md`。
+- 多 CowAgent 实例部署时，必须给每个实例配置独立 `COW_WORKSPACE`。不要让多个实例共用同一个 workspace。详细说明见 `references/operations.md`。
 - 如果确实需要把数据放到 workspace 之外，可以显式设置 `FITNESS_COACH_DATA_DIR`。这是完整数据目录覆盖项，优先级高于 `COW_WORKSPACE`。
 - 首次服务当前 CowAgent 实例时，先运行 `info` 确认 `runtime_context.workspace` 和 `runtime_context.runtime_dir` 指向预期目录；确认无误后再运行 `profile init` 建立基础档案。
 - 自动追问使用 `setup-schedule --yes` 写入 crontab；cron 行会显式带上当前 `COW_WORKSPACE`，每日检查会向 `$COW_WORKSPACE/scheduler/tasks.json` 写入 CowAgent 消息任务。

@@ -1,6 +1,6 @@
 # 用户基础信息档案模板
 
-真实档案保存为 `~/cow/fitness_coach/profile.md`。本文件只是模板，不保存用户真实数据。
+真实档案默认保存为 `$COW_WORKSPACE/fitness_coach/profile.md`。本文件只是模板，不保存用户真实数据。
 
 ## Frontmatter
 

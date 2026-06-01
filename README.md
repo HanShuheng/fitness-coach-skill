@@ -1,61 +1,38 @@
 # fitness-coach-skill
 
-面向 CowAgent 的长期健身饮食教练 skill。它把训练评估、饮食建议、每日记录、基础档案、上下文压缩、定时追问、导出迁移和版本检查放在一个可开源、可安装、可维护的技能目录里。
+面向 CowAgent 的长期健身饮食教练 skill。它负责建立基础档案、记录每日体重/饮食/训练/恢复、在缺失数据时主动追问，并在回答训练、减脂、增肌、饮食问题前读取历史上下文。
 
-## 能力概览
+## 能力
 
-- 首次调用先建立基础档案，避免无上下文给计划。
-- 支持记录每日体重、饮食、训练、睡眠、心情、压力、疼痛等信息。
-- 默认每天 `22:00` 检查当天关键数据是否缺失，并通过 CowAgent 消息任务主动追问。
-- 咨询训练、减脂、增肌、饮食时，先读取档案和压缩历史上下文。
-- 支持导出、导入、备份、迁移、卸载和版本更新检查，降低数据丢失风险。
-- 编排已有子 skill：`assessment`、`program-creation`、`rp-training`、`rp-diet`、`schoenfeld-hypertrophy`、`sbs-training`、`nutritional-specialist`。
+- 首次使用先建档：目标、身体数据、训练背景、饮食限制、伤病限制。
+- 每日记录：体重、饮食、训练、睡眠、心情、压力、疼痛等。
+- 默认每天 `22:00` 检查缺失项，并写入 CowAgent scheduler 任务。
+- 回答相关问题前读取基础档案、最近记录、摘要和长期记忆。
+- 支持备份、导出、导入、迁移、卸载和版本检查。
+- 编排子 skill：`assessment`、`program-creation`、`rp-training`、`rp-diet`、`schoenfeld-hypertrophy`、`sbs-training`、`nutritional-specialist`。
 
 ## 快速开始
 
-### 1. 安装
+安装：
 
 ```bash
 cow skill install HanShuheng/fitness-coach-skill
 ```
 
-如果你是手动安装，把本仓库放到 CowAgent 的技能目录，例如：
-
-```bash
-$COW_WORKSPACE/skills/fitness-coach-skill
-```
-
-### 2. 确认当前 CowAgent workspace
-
-这个项目只是一个 skill，不是服务。它不会自己识别“是哪一个 CowAgent 实例”，也不再维护 `FITNESS_COACH_USER_ID` 或 `--user-id`。
-
-它只按当前进程的 `COW_WORKSPACE` 保存数据：
+确认当前 CowAgent workspace 和数据目录：
 
 ```bash
 python scripts/fitness_coach.py info
 ```
 
-请确认输出里的：
-
-- `runtime_context.workspace` 是当前 CowAgent 实例的 workspace。
-- `runtime_context.runtime_dir` 是这个实例的健身数据目录。
-
-默认数据目录是：
-
-```text
-$COW_WORKSPACE/fitness_coach/
-```
-
-### 3. 初始化基础档案
+初始化基础档案：
 
 ```bash
 python scripts/fitness_coach.py profile init
 python scripts/fitness_coach.py profile status
 ```
 
-首次真正服务用户时，skill 会先询问基础信息：目标、年龄或出生年份、性别、身高体重、训练经验、每周可训练时间、饮食限制、过敏和伤病限制。
-
-### 4. 记录当天数据
+记录当天数据：
 
 ```bash
 python scripts/fitness_coach.py record \
@@ -63,153 +40,64 @@ python scripts/fitness_coach.py record \
   --raw-text "今天体重70.2，练胸，睡了7小时。"
 ```
 
-### 5. 开启每日缺失项检查
-
-默认检查时间是晚上 `22:00`：
-
-```bash
-python scripts/fitness_coach.py setup-schedule --yes
-```
-
-如果只想预览 crontab：
+预览每日检查 cron：
 
 ```bash
 python scripts/fitness_coach.py setup-schedule
 ```
 
-`setup-schedule` 生成的 cron 行会显式带上当前 `COW_WORKSPACE`，避免系统 cron 运行时丢失 workspace。
+写入每日检查 cron：
 
-## 多 CowAgent 实例怎么隔离数据
-
-本 skill 的隔离边界是 `COW_WORKSPACE`。
-
-如果同一台服务器运行多个 CowAgent，请给每个 CowAgent 实例配置不同 workspace，例如：
-
-```text
-CowAgent A: COW_WORKSPACE=/root/cow-a
-CowAgent B: COW_WORKSPACE=/root/cow-b
+```bash
+python scripts/fitness_coach.py setup-schedule --yes
 ```
 
-对应数据目录分别是：
+## 数据保存在哪里
+
+默认数据目录：
 
 ```text
-/root/cow-a/fitness_coach/
-/root/cow-b/fitness_coach/
+$COW_WORKSPACE/fitness_coach/
 ```
 
-这样两个 CowAgent 不会共用档案、每日记录、提醒任务、导出包和备份。
+本 skill 只按 `COW_WORKSPACE` 隔离 CowAgent 实例，不再维护 `FITNESS_COACH_USER_ID` 或 `--user-id`。一台服务器跑多个 CowAgent 时，请给每个实例配置不同 `COW_WORKSPACE`。
 
-注意：
-
-- 不要让多个 CowAgent 实例共用同一个 `COW_WORKSPACE`。
-- 安装 skill 时，应安装到各自 workspace 的 `skills/` 下。
-- 首次使用前运行 `python scripts/fitness_coach.py info`，确认 `runtime_context.workspace`。
-- 如果一个 CowAgent 实例内部同时服务多个真实用户，本 skill 暂不做用户级隔离；需要由 CowAgent 上层路由或独立 workspace 解决。
-
-完整说明见：
-
-- `references/cowagent-multi-instance-workspace.md`
-- `references/multi-instance-deployment.md`
-
-## 可选数据目录覆盖
-
-通常只需要配置 `COW_WORKSPACE`。只有在你明确希望把健身数据放到 workspace 之外时，才设置：
+可选完整覆盖目录：
 
 ```bash
 export FITNESS_COACH_DATA_DIR="/data/cowagent-a/fitness_coach"
 ```
 
-路径解析优先级：
+路径优先级：
 
 1. `FITNESS_COACH_DATA_DIR`
 2. `$COW_WORKSPACE/fitness_coach`
 
-## 数据文件
+## 常用命令
 
-主要文件：
+| 场景 | 命令 |
+|---|---|
+| 查看状态 | `python scripts/fitness_coach.py info` |
+| 建立档案 | `python scripts/fitness_coach.py profile init` |
+| 更新档案 | `python scripts/fitness_coach.py profile update --payload-json '<json>' --raw-text '<原文>'` |
+| 记录每日数据 | `python scripts/fitness_coach.py record --payload-json '<json>' --raw-text '<原文>'` |
+| 构建上下文 | `python scripts/fitness_coach.py build-context --topic general` |
+| 每日缺失检查 | `python scripts/fitness_coach.py daily-check` |
+| 设置提醒 | `python scripts/fitness_coach.py setup-schedule --yes` |
+| 导出数据 | `python scripts/fitness_coach.py export --format zip` |
+| 导入数据 | `python scripts/fitness_coach.py import --from <export.zip>` |
+| 检查更新 | `python scripts/fitness_coach.py check-update` |
+| 卸载预览 | `python scripts/fitness_coach.py uninstall --dry-run` |
 
-- `profile.md`：基础档案。
-- `config.json`：提醒时间、必填项、版本检查地址和跳过版本。
-- `data/daily/YYYY-MM-DD.md`：每日记录。
-- `data/memory/*.md`：长期记忆。
-- `data/summaries/`：周/月摘要。
-- `data/exports/`：导出包。
-- `data/backups/`：备份。
+## 文档地图
+
+- [操作手册](references/operations.md)：首次使用、多实例 workspace、提醒、导出导入、迁移、更新、卸载。
+- [数据契约](references/data-contract.md)：运行目录、文件结构、frontmatter、兼容性要求。
+- [基础档案模板](references/profile-template.md)
+- [每日记录模板](references/daily-log-template.md)
+- [长期记忆模板](references/memory-template.md)
 
 `references/` 只保存模板和规范，不保存真实用户数据。
-
-## 导出、迁移与恢复
-
-导出全部数据：
-
-```bash
-python scripts/fitness_coach.py export --format zip
-```
-
-导入到新环境：
-
-```bash
-python scripts/fitness_coach.py import --from <export.zip>
-```
-
-迁移前预览：
-
-```bash
-python scripts/fitness_coach.py migrate --dry-run
-```
-
-执行迁移：
-
-```bash
-python scripts/fitness_coach.py migrate --yes
-```
-
-迁移和导入前会自动创建备份。Markdown 是主真相，索引和摘要可以重建。
-
-## 版本更新
-
-查看当前版本：
-
-```bash
-python scripts/fitness_coach.py version
-```
-
-检查远端更新：
-
-```bash
-python scripts/fitness_coach.py check-update
-```
-
-跳过某个版本：
-
-```bash
-python scripts/fitness_coach.py skip-version --version 0.2.0
-```
-
-更新前建议先准备备份：
-
-```bash
-python scripts/fitness_coach.py prepare-update --target-version 0.2.0
-```
-
-## 卸载
-
-卸载 skill 代码不会自动删除 `$COW_WORKSPACE/fitness_coach/` 数据。推荐流程：
-
-```bash
-python scripts/fitness_coach.py export --format zip
-python scripts/fitness_coach.py uninstall --remove-schedules --yes
-```
-
-然后再使用 CowAgent 的 skill 卸载命令删除代码。
-
-彻底删除数据前，命令会先自动导出：
-
-```bash
-python scripts/fitness_coach.py uninstall --remove-data --yes
-```
-
-更完整的卸载说明见 `references/uninstall.md`。
 
 ## 开发与测试
 

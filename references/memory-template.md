@@ -1,6 +1,6 @@
 # 长期记忆模板
 
-长期记忆保存到 `~/cow/fitness_coach/data/memory/*.md`，用于记录不适合放在单日记录里的长期信息。
+长期记忆默认保存到 `$COW_WORKSPACE/fitness_coach/data/memory/*.md`，用于记录不适合放在单日记录里的长期信息。
 
 ## 建议文件
 

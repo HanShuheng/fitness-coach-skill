@@ -1,5 +1,12 @@
 # 更新日志
 
+## 0.1.7 - 2026-06-01
+
+- 精简文档结构，合并首次使用、多实例、提醒、上下文、导出迁移、更新和卸载说明到 `references/operations.md`。
+- 删除重复的操作类 references 文档，只保留数据契约和模板文档。
+- README 改为轻量入口，避免与 `SKILL.md` 和 references 重复维护。
+- 模板中的默认路径统一为 `$COW_WORKSPACE/fitness_coach`。
+
 ## 0.1.6 - 2026-06-01
 
 - 移除用户层数据隔离实现，脚本不再解析 `--user-id` / `--profile-id`，也不再读取 `FITNESS_COACH_USER_ID` 等用户身份环境变量。
@@ -29,7 +36,7 @@
 
 ## 0.1.2 - 2026-06-01
 
-- 新增 `references/multi-instance-deployment.md`，说明多 CowAgent 实例如何设置环境变量。
+- 补充多 CowAgent 实例如何设置环境变量的说明。
 - 在 README 和数据契约中补充 systemd、手动启动和验证命令。
 - 版本同步到 `0.1.2`，方便用户通过 `check-update` 获取说明更新。
 
