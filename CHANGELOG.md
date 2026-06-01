@@ -1,5 +1,11 @@
 # 更新日志
 
+## 0.1.2 - 2026-06-01
+
+- 新增 `references/multi-instance-deployment.md`，说明多 CowAgent 实例如何设置环境变量。
+- 在 README 和数据契约中补充 systemd、手动启动和验证命令。
+- 版本同步到 `0.1.2`，方便用户通过 `check-update` 获取说明更新。
+
 ## 0.1.1 - 2026-06-01
 
 - 增加多 CowAgent 实例数据隔离。

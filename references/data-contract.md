@@ -46,6 +46,8 @@ export FITNESS_COACH_DATA_DIR="/data/cowagent/wxbot-main/fitness_coach"
 2. `FITNESS_COACH_INSTANCE_ID` / `COWAGENT_INSTANCE_ID` / `COW_AGENT_INSTANCE_ID`
 3. `$COW_WORKSPACE/fitness_coach`
 
+不会设置环境变量时，先读 `references/multi-instance-deployment.md`。里面写了 systemd、命令行手动启动和验证方法。
+
 ## 主真相
 
 - Markdown 文件是主真相：`profile.md`、`daily/*.md`、`memory/*.md`。

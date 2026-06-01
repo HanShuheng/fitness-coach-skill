@@ -96,6 +96,14 @@ export FITNESS_COACH_DATA_DIR="/data/cowagent/wxbot-main/fitness_coach"
 2. `FITNESS_COACH_INSTANCE_ID` / `COWAGENT_INSTANCE_ID` / `COW_AGENT_INSTANCE_ID`
 3. `$COW_WORKSPACE/fitness_coach`
 
+如果你不知道“在哪里设置环境变量”，看这里：
+
+- systemd 服务：`sudo systemctl edit cowagent.service`，在 `[Service]` 下写 `Environment=FITNESS_COACH_INSTANCE_ID=wxbot-main`。
+- 手动启动：运行 `FITNESS_COACH_INSTANCE_ID=wxbot-main cow start`。
+- 验证：运行 `python scripts/fitness_coach.py info`，查看输出里的 `runtime_dir`。
+
+完整步骤见 `references/multi-instance-deployment.md`。
+
 主要文件：
 
 - `profile.md`：用户基础档案。

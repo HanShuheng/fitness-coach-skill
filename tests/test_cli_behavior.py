@@ -287,7 +287,7 @@ def test_skip_version_and_check_update_use_persisted_state(tmp_path: Path) -> No
     payload = extract_json_object(check_result.stdout)
 
     assert skip_result.returncode == 0
-    assert payload["current_version"] == "0.1.1"
+    assert payload["current_version"] == "0.1.2"
     assert payload["remote_version"] == "0.2.0"
     assert payload["has_update"] is True
     assert payload["skipped"] is True
