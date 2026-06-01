@@ -1,0 +1,20 @@
+{
+  "_comment": "fitness-coach-skill 配置示例。真实配置默认保存到 ~/cow/fitness_coach/config.json。",
+  "schema_version": 1,
+  "daily_check_time": "22:00",
+  "timezone": "Asia/Shanghai",
+  "auto_setup_schedule": {
+    "_comment": "设为 false 可关闭自动补齐 crontab。修改时间后运行 setup-schedule --replace --yes 生效。",
+    "enabled": true,
+    "daily_check_time": "22:00"
+  },
+  "required_daily_fields": [
+    "body.weight_kg",
+    "nutrition.summary",
+    "training.status",
+    "recovery.sleep_hours",
+    "recovery.mood"
+  ],
+  "version_check_url": "https://raw.githubusercontent.com/HanShuheng/fitness-coach-skill/main/SKILL.md",
+  "skipped_versions": []
+}

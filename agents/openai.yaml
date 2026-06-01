@@ -1,0 +1,7 @@
+interface:
+  display_name: "健身教练 Skill"
+  short_description: "训练、饮食、记录与计划编排"
+  default_prompt: "使用 $fitness-coach-skill 先读取或建立我的健身饮食档案，再按目标路由到合适的子 skill。"
+
+policy:
+  allow_implicit_invocation: true
