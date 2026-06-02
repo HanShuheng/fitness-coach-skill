@@ -48,10 +48,10 @@ def make_manifest(root: Path) -> dict:
     }
 
 
-def export_data() -> Path:
+def export_data(reason: str = "manual-export") -> Path:
     ensure_dirs()
     EXPORT_DIR.mkdir(parents=True, exist_ok=True)
-    export_id = timestamp_id("fitness-coach-export")
+    export_id = timestamp_id(f"fitness-coach-skill-backup-{reason}-v{DATA_SCHEMA_VERSION}")
     zip_path = EXPORT_DIR / f"{export_id}.zip"
     manifest = make_manifest(RUNTIME_DIR)
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -68,9 +68,9 @@ def cmd_export() -> int:
     return 0
 
 
-def backup(label: str = "backup") -> Path:
+def backup(label: str = "manual-export") -> Path:
     ensure_dirs()
-    backup_dir = BACKUP_DIR / timestamp_id(label)
+    backup_dir = BACKUP_DIR / timestamp_id(f"fitness-coach-skill-backup-{label}-v{DATA_SCHEMA_VERSION}")
     backup_dir.mkdir(parents=True, exist_ok=True)
     for path in RUNTIME_DIR.iterdir():
         if path.name == "data":

@@ -1,0 +1,2 @@
+# 本 skill 运行时只使用 Python 标准库。
+# 保留此文件是为了满足 CowAgent skill 发布规范和用户安装流程。

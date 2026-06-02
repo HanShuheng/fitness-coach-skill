@@ -18,6 +18,7 @@ python scripts/fitness_coach.py info
 然后初始化基础档案：
 
 ```bash
+python scripts/fitness_coach.py init
 python scripts/fitness_coach.py profile init
 python scripts/fitness_coach.py profile status
 ```
@@ -32,6 +33,24 @@ python scripts/fitness_coach.py profile status
 6. 伤病、疼痛、医疗限制。
 
 用户拒答的非核心字段记为 `unknown`，不得编造。
+
+## Preflight 与状态
+
+每次执行业务能力前，应参考：
+
+```bash
+python scripts/fitness_coach.py status
+```
+
+状态字段：
+
+- `uninitialized`：尚未创建数据目录或配置。
+- `profile_required`：基础档案缺失或核心字段不足。
+- `config_required`：配置文件缺失。
+- `migration_required`：数据 schema 需要迁移。
+- `ready`：可以使用业务能力。
+
+未 ready 时，输出会包含 `missing`、`reason`、`next_step` 和 `progress_saved`。
 
 ## 多 CowAgent 实例
 
@@ -123,12 +142,14 @@ python scripts/fitness_coach.py build-context --topic general
 
 ```bash
 python scripts/fitness_coach.py export --format zip
+python scripts/fitness_coach.py export-data --format zip
 ```
 
 导入：
 
 ```bash
 python scripts/fitness_coach.py import --from <export.zip>
+python scripts/fitness_coach.py import-data --from <export.zip>
 ```
 
 备份和恢复：
@@ -148,6 +169,12 @@ python scripts/fitness_coach.py migrate --dry-run
 
 ```bash
 python scripts/fitness_coach.py migrate --yes
+```
+
+修复可恢复状态：
+
+```bash
+python scripts/fitness_coach.py repair
 ```
 
 安全要求：
@@ -218,6 +245,7 @@ python scripts/fitness_coach.py uninstall --remove-schedules --yes
 
 ```bash
 python scripts/fitness_coach.py uninstall --remove-data --yes
+python scripts/fitness_coach.py purge --yes --confirm 确认清除
 ```
 
 `--remove-data --yes` 会先自动导出，再删除当前运行目录。

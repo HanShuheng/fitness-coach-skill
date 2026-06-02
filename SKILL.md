@@ -1,7 +1,7 @@
 ---
 name: fitness-coach-skill
 description: 用于健身教练场景的 CowAgent 编排 skill，覆盖训练评估、增肌训练、SBS 模板、饮食宏量、餐食个性化、长期记录和完整训练饮食计划，并按需要路由到子 skill。
-version: "0.1.7"
+version: "0.1.8"
 entrypoint: "scripts/fitness_coach.py"
 post_install_command: "python scripts/fitness_coach.py version"
 config_file: "$FITNESS_COACH_DATA_DIR/config.json 或 $COW_WORKSPACE/fitness_coach/config.json"
@@ -37,7 +37,9 @@ version_check_url: "https://raw.githubusercontent.com/HanShuheng/fitness-coach-s
 
 | 场景 | 命令 |
 |---|---|
+| 初始化或继续初始化 | `python scripts/fitness_coach.py init` |
 | 查看运行目录 | `python scripts/fitness_coach.py info` |
+| 详细诊断状态 | `python scripts/fitness_coach.py status` |
 | 首次建档 | `python scripts/fitness_coach.py profile init` |
 | 查看档案状态 | `python scripts/fitness_coach.py profile status` |
 | 更新档案 | `python scripts/fitness_coach.py profile update --payload-json '<json>' --raw-text '<用户原文>'` |
@@ -46,15 +48,20 @@ version_check_url: "https://raw.githubusercontent.com/HanShuheng/fitness-coach-s
 | 生成摘要 | `python scripts/fitness_coach.py summarize --weekly` 或 `--monthly` |
 | 设置每日检查 | `python scripts/fitness_coach.py setup-schedule --yes` |
 | 导出迁移包 | `python scripts/fitness_coach.py export` |
+| 标准导出别名 | `python scripts/fitness_coach.py export-data` |
 | 导入迁移包 | `python scripts/fitness_coach.py import --from <zip>` |
+| 标准导入别名 | `python scripts/fitness_coach.py import-data --from <zip>` |
+| 修复可恢复状态 | `python scripts/fitness_coach.py repair` |
 | 卸载预览 | `python scripts/fitness_coach.py uninstall --dry-run` |
 | 移除提醒 | `python scripts/fitness_coach.py uninstall --remove-schedules --yes` |
 | 导出后删除数据 | `python scripts/fitness_coach.py uninstall --remove-data --yes` |
+| 清除数据前置流程 | `python scripts/fitness_coach.py purge --yes --confirm 确认清除` |
 | 检查版本 | `python scripts/fitness_coach.py check-update` |
 
 ## 数据记录与上下文读取
 
 - 首次服务当前 CowAgent 实例前，先确认 `profile status`；如果档案不存在或核心字段缺失，收集目标、身体、训练、饮食、生活方式和健康限制中的必要字段。
+- 每次执行业务能力前，应先参考 `status` / `info` 的 `initialization` 状态；未 ready 时先按 `next_step` 完成初始化、配置或迁移。
 - 用户给出体重、训练、饮食、睡眠、情绪、伤病或执行反馈时，用 `record` 写入每日记录；能结构化就放入 `payload-json`，原话放入 `raw-text`。
 - 回答个性化建议前，优先运行 `build-context` 读取基础档案、最近 14 天记录、周摘要和月摘要，再结合当前对话回答。
 - 周期性复盘时运行 `summarize --weekly` 或 `summarize --monthly`；摘要只保留决策所需信息，避免重复堆积长日志。

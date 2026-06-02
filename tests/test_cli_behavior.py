@@ -287,7 +287,7 @@ def test_skip_version_and_check_update_use_persisted_state(tmp_path: Path) -> No
     payload = extract_json_object(check_result.stdout)
 
     assert skip_result.returncode == 0
-    assert payload["current_version"] == "0.1.7"
+    assert payload["current_version"] == "0.1.8"
     assert payload["remote_version"] == "0.2.0"
     assert payload["has_update"] is True
     assert payload["skipped"] is True
@@ -365,7 +365,7 @@ def test_version_command_does_not_create_default_runtime_dir(tmp_path: Path) -> 
     result = run_cli(workspace, "version")
 
     assert result.returncode == 0
-    assert "0.1.7" in result.stdout
+    assert "0.1.8" in result.stdout
     assert not (workspace / "fitness_coach").exists()
 
 
@@ -377,3 +377,48 @@ def test_setup_schedule_cron_line_keeps_workspace(tmp_path: Path) -> None:
     assert f"COW_WORKSPACE={workspace}" in result.stdout
     assert "FITNESS_COACH_USER_ID" not in result.stdout
     assert "fitness_coach/fitness_coach.log" in result.stdout
+
+
+def test_standard_skill_commands_status_aliases_repair_and_purge_guard(tmp_path: Path) -> None:
+    workspace = tmp_path / "cow"
+
+    status_result = run_cli(workspace, "status")
+    status_payload = extract_json_object(status_result.stdout)
+    assert status_result.returncode == 0
+    assert status_payload["state"] in {"uninitialized", "profile_required", "config_required"}
+    assert status_payload["next_step"]
+
+    init_result = run_cli(workspace, "init")
+    assert init_result.returncode == 0
+    assert (runtime_dir(workspace) / "profile.md").exists()
+    assert (runtime_dir(workspace) / "config.json").exists()
+
+    sync_result = run_cli(workspace, "sync")
+    assert sync_result.returncode == 0
+    assert "无需必须同步" in sync_result.stdout or "sync skipped" in sync_result.stdout
+
+    run_cli(
+        workspace,
+        "record",
+        "--payload-json",
+        json.dumps(complete_daily_payload(), ensure_ascii=False),
+        "--raw-text",
+        "用于测试标准命令。",
+    )
+    export_result = run_cli(workspace, "export-data", "--format", "zip")
+    export_path = extract_export_path(export_result.stdout)
+    assert export_result.returncode == 0
+    assert "fitness-coach-skill-backup-manual-export-v1" in export_path.name
+
+    target_workspace = tmp_path / "target-cow"
+    import_result = run_cli(target_workspace, "import-data", "--from", str(export_path))
+    assert import_result.returncode == 0
+    assert (runtime_dir(target_workspace) / "profile.md").exists()
+
+    repair_result = run_cli(workspace, "repair")
+    assert repair_result.returncode == 0
+    assert (runtime_dir(workspace) / "data" / "index.json").exists()
+
+    guarded_purge = run_cli(workspace, "purge", "--yes", check=False)
+    assert guarded_purge.returncode == 2
+    assert "确认清除" in guarded_purge.stdout

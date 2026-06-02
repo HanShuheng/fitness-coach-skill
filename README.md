@@ -28,6 +28,7 @@ python scripts/fitness_coach.py info
 初始化基础档案：
 
 ```bash
+python scripts/fitness_coach.py init
 python scripts/fitness_coach.py profile init
 python scripts/fitness_coach.py profile status
 ```
@@ -78,6 +79,8 @@ export FITNESS_COACH_DATA_DIR="/data/cowagent-a/fitness_coach"
 | 场景 | 命令 |
 |---|---|
 | 查看状态 | `python scripts/fitness_coach.py info` |
+| 详细诊断 | `python scripts/fitness_coach.py status` |
+| 初始化 | `python scripts/fitness_coach.py init` |
 | 建立档案 | `python scripts/fitness_coach.py profile init` |
 | 更新档案 | `python scripts/fitness_coach.py profile update --payload-json '<json>' --raw-text '<原文>'` |
 | 记录每日数据 | `python scripts/fitness_coach.py record --payload-json '<json>' --raw-text '<原文>'` |
@@ -85,9 +88,13 @@ export FITNESS_COACH_DATA_DIR="/data/cowagent-a/fitness_coach"
 | 每日缺失检查 | `python scripts/fitness_coach.py daily-check` |
 | 设置提醒 | `python scripts/fitness_coach.py setup-schedule --yes` |
 | 导出数据 | `python scripts/fitness_coach.py export --format zip` |
+| 标准导出别名 | `python scripts/fitness_coach.py export-data --format zip` |
 | 导入数据 | `python scripts/fitness_coach.py import --from <export.zip>` |
+| 标准导入别名 | `python scripts/fitness_coach.py import-data --from <export.zip>` |
+| 修复可恢复状态 | `python scripts/fitness_coach.py repair` |
 | 检查更新 | `python scripts/fitness_coach.py check-update` |
 | 卸载预览 | `python scripts/fitness_coach.py uninstall --dry-run` |
+| 清除数据 | `python scripts/fitness_coach.py purge --yes --confirm 确认清除` |
 
 ## 文档地图
 
@@ -99,11 +106,16 @@ export FITNESS_COACH_DATA_DIR="/data/cowagent-a/fitness_coach"
 
 `references/` 只保存模板和规范，不保存真实用户数据。
 
+## 免责声明
+
+本 skill 只提供一般健身、训练和饮食管理建议，不提供医疗诊断或治疗。涉及伤病、慢性病、进食障碍、妊娠、药物、医生限制或其他高风险情况时，请咨询合格专业人士。
+
 ## 开发与测试
 
-本项目运行时只使用 Python 标准库。测试需要 `pytest`：
+本项目运行时只使用 Python 标准库，`requirements.txt` 仅作为安装规范入口。测试需要 `pytest`：
 
 ```bash
+python -m pip install -r requirements.txt
 python -m pytest -q tests
 python -m compileall -q scripts tests
 ```

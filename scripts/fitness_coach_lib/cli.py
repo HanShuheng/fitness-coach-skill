@@ -9,7 +9,9 @@ from .info import info
 from .migration import migrate
 from .profile import init_profile, profile_status, show_profile, update_profile
 from .scheduler import daily_check, setup_schedule
-from .uninstall import uninstall
+from .state import status
+from .storage import load_config
+from .uninstall import purge, uninstall
 from .versioning import check_update, post_update_check, prepare_update, skip_version, version
 
 
@@ -45,15 +47,23 @@ def main() -> int:
     p_schedule.add_argument("--daily-time")
     p_schedule.add_argument("--python", dest="python_bin")
 
+    sub.add_parser("init")
     sub.add_parser("info")
+    sub.add_parser("status")
+    sub.add_parser("sync")
     sub.add_parser("backup")
     p_restore = sub.add_parser("restore")
     p_restore.add_argument("--backup-id", required=True)
     p_export = sub.add_parser("export")
     p_export.add_argument("--format", choices=["zip"], default="zip")
+    p_export_data = sub.add_parser("export-data")
+    p_export_data.add_argument("--format", choices=["zip"], default="zip")
     p_import = sub.add_parser("import")
     p_import.add_argument("--from", dest="from_path", required=True)
+    p_import_data = sub.add_parser("import-data")
+    p_import_data.add_argument("--from", dest="from_path", required=True)
     sub.add_parser("rebuild-index")
+    sub.add_parser("repair")
 
     p_migrate = sub.add_parser("migrate")
     p_migrate.add_argument("--dry-run", action="store_true")
@@ -64,6 +74,9 @@ def main() -> int:
     p_uninstall.add_argument("--remove-schedules", action="store_true")
     p_uninstall.add_argument("--remove-data", action="store_true")
     p_uninstall.add_argument("--yes", action="store_true")
+    p_purge = sub.add_parser("purge")
+    p_purge.add_argument("--yes", action="store_true")
+    p_purge.add_argument("--confirm")
 
     sub.add_parser("version")
     p_check = sub.add_parser("check-update")
@@ -98,22 +111,35 @@ def main() -> int:
         return summarize("weekly" if args.weekly else "monthly")
     if args.command == "setup-schedule":
         return setup_schedule(args.yes, args.replace, args.daily_time, args.python_bin)
+    if args.command == "init":
+        load_config()
+        return init_profile()
     if args.command == "info":
         return info()
+    if args.command == "status":
+        return status()
+    if args.command == "sync":
+        print("OK sync skipped: 本 skill 暂无必须同步的外部数据源。")
+        return 0
     if args.command == "backup":
         return cmd_backup()
     if args.command == "restore":
         return restore(args.backup_id)
-    if args.command == "export":
+    if args.command in {"export", "export-data"}:
         return cmd_export()
-    if args.command == "import":
+    if args.command in {"import", "import-data"}:
         return import_zip(args.from_path)
     if args.command == "rebuild-index":
+        return rebuild_index()
+    if args.command == "repair":
+        cmd_backup()
         return rebuild_index()
     if args.command == "migrate":
         return migrate(args.dry_run, args.yes)
     if args.command == "uninstall":
         return uninstall(args.dry_run, args.remove_schedules, args.remove_data, args.yes)
+    if args.command == "purge":
+        return purge(args.yes, args.confirm)
     if args.command == "version":
         return version()
     if args.command == "check-update":

@@ -1,5 +1,14 @@
 # 更新日志
 
+## 0.1.8 - 2026-06-02
+
+- 按 CowAgent skill 开发规范补齐标准命令入口：`init`、`status`、`sync`、`repair`、`purge`、`export-data`、`import-data`。
+- 新增初始化 preflight 状态，`info` 输出 `initialization`，`status` 输出详细诊断和下一步命令。
+- 新增 `requirements.txt`，明确运行时仅使用 Python 标准库。
+- 备份/导出命名加入 skill、reason、schema 版本和时间戳。
+- 清除数据流程增加 `purge --yes --confirm 确认清除` 二次确认入口。
+- README、SKILL 和操作手册同步补充规范命令和初始化状态说明。
+
 ## 0.1.7 - 2026-06-01
 
 - 精简文档结构，合并首次使用、多实例、提醒、上下文、导出迁移、更新和卸载说明到 `references/operations.md`。
